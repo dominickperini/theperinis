@@ -1,6 +1,37 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { wedding } from '../../data/wedding';
+import { getParty, normalizeCode, type Party } from '../../lib/guests';
+
+export const prerender = false;
+
+const code = normalizeCode(Astro.url.searchParams.get('code') ?? '');
+const errorCode = Astro.url.searchParams.get('error');
+
+let party: Party | null = null;
+let lookupFailed = false;
+if (code) {
+  try {
+    party = await getParty(code);
+  } catch (err) {
+    console.error('Could not read the guest list', err);
+    lookupFailed = true;
+  }
+  if (party?.status === 'not_invited') party = null;
+}
+
+const messages: Record<string, string> = {
+  name: 'Please type your name.',
+  email: 'Please type a correct email address.',
+  attending: 'Please tell us if you can attend.',
+  code: 'We cannot find this invitation code. Please examine the code on your invitation and try again.',
+  server: 'We could not save your RSVP. Please try again, or send us an email.',
+};
+let error = errorCode ? (messages[errorCode] ?? messages.server) : '';
+if (!error && lookupFailed) error = messages.server;
+else if (!error && code && !party) error = messages.code;
+
+Astro.response.headers.set('Cache-Control', 'no-store');
 ---
 
 <Layout title="RSVP">
@@ -11,9 +42,29 @@ import { wedding } from '../../data/wedding';
       <p>Please reply before {wedding.rsvpDeadline}.</p>
     </div>
 
-    <p class="error card" role="alert" hidden></p>
+    {error && <p class="error card" role="alert">{error}</p>}
+
+    {
+      !party && (
+        <form class="card" method="get" action="/rsvp">
+          <label>
+            Invitation code
+            <input name="code" required value={code} autocomplete="off" autocapitalize="characters" maxlength="12" />
+            <small class="muted">The code is on your invitation. It has 6 letters and numbers.</small>
+          </label>
+          <button class="button" type="submit">Continue</button>
+        </form>
+      )
+    }
+
+    {party && (
 
     <form class="card" method="post" action="/api/rsvp">
+      <input type="hidden" name="code" value={party.code} />
+      <p class="party">
+        Invitation for <strong>{party.name}</strong>
+        <br /><span class="muted">We saved {party.seats} {party.seats === 1 ? 'seat' : 'seats'} for you.</span>
+      </p>
       <label>
         Your full name
         <input name="name" required autocomplete="name" maxlength="200" />
@@ -21,7 +72,7 @@ import { wedding } from '../../data/wedding';
 
       <label>
         Email
-        <input name="email" type="email" required autocomplete="email" maxlength="200" />
+        <input name="email" type="email" required autocomplete="email" maxlength="200" value={party.email} />
         <small class="muted">We use your email only to send you wedding updates.</small>
       </label>
 
@@ -33,8 +84,8 @@ import { wedding } from '../../data/wedding';
 
       <div class="if-yes">
         <label>
-          Number of guests (include yourself)
-          <input name="guests" type="number" min="1" max="10" value="1" inputmode="numeric" />
+          Number of guests who will come (include yourself)
+          <input name="guests" type="number" min="1" max={party.seats} value={party.seats} inputmode="numeric" />
         </label>
 
         <label>
@@ -64,8 +115,9 @@ import { wedding } from '../../data/wedding';
       </label>
 
       <button class="button" type="submit">Send RSVP</button>
-      <p class="muted small">To change your reply, send the form again with the same email.</p>
+      <p class="muted small">To change your reply, open this page again and send the form again.</p>
     </form>
+    )}
   </div>
 </Layout>
 
@@ -90,31 +142,20 @@ import { wedding } from '../../data/wedding';
   small { font-weight: 400; }
   .small { font-size: 0.9rem; margin: 0; }
   .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+  .party { margin: 0; font-size: 1.05rem; }
   .error { border-color: #b4553f; color: #8a3a28; }
   button { justify-self: start; }
 </style>
 
 <script>
-  const messages: Record<string, string> = {
-    name: 'Please type your name.',
-    email: 'Please type a correct email address.',
-    attending: 'Please tell us if you can attend.',
-    server: 'We could not save your RSVP. Please try again, or send us an email.',
-  };
-  const code = new URLSearchParams(location.search).get('error');
-  const box = document.querySelector<HTMLElement>('.error');
-  if (code && box) {
-    box.textContent = messages[code] ?? messages.server;
-    box.hidden = false;
-  }
-
   // Show the guest questions only when the guest says yes.
-  const form = document.querySelector('form')!;
-  const extra = form.querySelector<HTMLElement>('.if-yes')!;
-  const sync = () => {
-    const no = form.querySelector<HTMLInputElement>('input[name="attending"][value="no"]')!.checked;
-    extra.hidden = no;
-  };
-  form.addEventListener('change', sync);
-  sync();
+  const form = document.querySelector<HTMLFormElement>('form[method="post"]');
+  const extra = form?.querySelector<HTMLElement>('.if-yes');
+  if (form && extra) {
+    const sync = () => {
+      extra.hidden = !!form.querySelector<HTMLInputElement>('input[name="attending"][value="no"]')?.checked;
+    };
+    form.addEventListener('change', sync);
+    sync();
+  }
 </script>

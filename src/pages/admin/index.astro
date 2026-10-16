@@ -1,0 +1,277 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { isAdmin } from '../../lib/auth';
+import { backfill, getSettings, listParties, seatsHeld, stats, type Party } from '../../lib/guests';
+
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+const admin = isAdmin(Astro.cookies);
+const msg = Astro.url.searchParams.get('msg');
+const keyError = Astro.url.searchParams.get('error') === 'key';
+
+let parties: Party[] = [];
+let s = stats([], { capacity: 0 });
+let next: Party[] = [];
+if (admin) {
+  parties = await listParties();
+  s = stats(parties, await getSettings());
+  next = s.aNotInvited === 0 ? backfill(parties, s.open) : [];
+}
+const link = (p: Party) => `${Astro.url.origin}/rsvp?code=${p.code}`;
+const statusText = (p: Party) =>
+  ({ not_invited: 'Not invited', invited: 'Waiting for reply', attending: `Yes, ${p.attending}`, declined: 'No' })[p.status];
+const lists = [
+  { id: 'A', title: 'A list', parties: parties.filter((p) => p.list === 'A') },
+  { id: 'B', title: 'B list (backfill order)', parties: parties.filter((p) => p.list === 'B') },
+];
+---
+
+<Layout title="Guest list" noindex>
+  <div class="admin">
+    {
+      !admin && (
+        <form class="card login" method="post" action="/api/admin">
+          <h1>Guest list</h1>
+          {keyError && <p class="error">The admin key is not correct.</p>}
+          <input type="hidden" name="action" value="login" />
+          <label>
+            Admin key
+            <input name="key" type="password" required autocomplete="current-password" />
+          </label>
+          <button class="button" type="submit">Log in</button>
+        </form>
+      )
+    }
+
+    {
+      admin && (
+        <>
+          <div class="top">
+            <h1>Guest list</h1>
+            <div class="links">
+              <a href="/api/admin/guests">Download guest list (CSV)</a>
+              <a href="/api/rsvps">Download RSVP answers (CSV)</a>
+              <form method="post" action="/api/admin">
+                <input type="hidden" name="action" value="logout" />
+                <button class="link" type="submit">Log out</button>
+              </form>
+            </div>
+          </div>
+
+          {msg && <p class="card notice" role="status">{msg}</p>}
+
+          <section class="tiles">
+            <div class="tile"><span>{s.capacity}</span>Guest limit</div>
+            <div class="tile"><span>{s.held}</span>Seats held</div>
+            <div class={`tile ${s.open > 0 ? 'good' : s.open < 0 ? 'bad' : ''}`}><span>{s.open}</span>Open seats</div>
+            <div class="tile"><span>{s.attending}</span>Guests coming</div>
+            <div class="tile"><span>{s.awaiting}</span>Waiting for reply</div>
+            <div class="tile"><span>{s.declined}</span>Said no</div>
+          </section>
+          <p class="muted small">
+            Seats held = all seats of invitations with no reply, plus the guests who said yes. Open seats = guest
+            limit minus seats held.
+          </p>
+
+          <section class="card">
+            <h2>Invite next</h2>
+            {s.aNotInvited > 0 && (
+              <p>
+                {s.aNotInvited} A-list {s.aNotInvited === 1 ? 'invitation is' : 'invitations are'} not sent yet.
+                Send the A list first. Then mark those invitations as sent in the A list below.
+              </p>
+            )}
+            {s.aNotInvited === 0 && s.open <= 0 && <p>There are no open seats now.</p>}
+            {s.aNotInvited === 0 && s.open > 0 && next.length === 0 && (
+              <p>There are {s.open} open seats, but no B-list invitation fits. Add more people to the B list.</p>
+            )}
+            {next.length > 0 && (
+              <form method="post" action="/api/admin">
+                <input type="hidden" name="action" value="invite" />
+                <p>
+                  There {s.open === 1 ? 'is 1 open seat' : `are ${s.open} open seats`}. These B-list invitations fit.
+                  Send each guest the invitation link, then click the button.
+                </p>
+                <ul class="next">
+                  {next.map((p) => (
+                    <li>
+                      <label class="check">
+                        <input type="checkbox" name="code" value={p.code} checked />
+                        {p.name} ({p.seats})
+                      </label>
+                      <button type="button" class="link copy" data-copy={link(p)}>Copy link</button>
+                    </li>
+                  ))}
+                </ul>
+                <button class="button" type="submit">Mark selected as sent</button>
+              </form>
+            )}
+          </section>
+
+          {lists.map((l) => (
+            <section class="card">
+              <h2>
+                {l.title} <small class="muted">{l.parties.length} invitations, {l.parties.reduce((n, p) => n + p.seats, 0)} seats</small>
+              </h2>
+              {l.parties.length === 0 ? (
+                <p class="muted">Nobody is on this list yet. Add guests below.</p>
+              ) : (
+                <form method="post" action="/api/admin" id={`bulk-${l.id}`}>
+                  <input type="hidden" name="action" value="invite" />
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th></th>
+                          <th>Name</th>
+                          <th>Seats</th>
+                          <th>Status</th>
+                          <th>Invitation</th>
+                          <th>Change reply</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {l.parties.map((p) => (
+                          <tr class={p.status}>
+                            <td>
+                              {p.status === 'not_invited' && (
+                                <input type="checkbox" name="code" value={p.code} aria-label={`Select ${p.name}`} />
+                              )}
+                            </td>
+                            <td>
+                              {p.name}
+                              {p.email && <div class="muted small">{p.email}</div>}
+                            </td>
+                            <td>{p.seats}{seatsHeld(p) !== p.seats && p.status !== 'not_invited' && <span class="muted"> ({seatsHeld(p)} held)</span>}</td>
+                            <td>{statusText(p)}</td>
+                            <td class="nowrap">
+                              <code>{p.code}</code>{' '}
+                              <button type="button" class="link copy" data-copy={link(p)}>Copy link</button>
+                            </td>
+                            <td class="nowrap">
+                              <select name="reply" form={`reply-${p.code}`} aria-label={`Reply for ${p.name}`}>
+                                <option value="waiting" selected={p.status === 'invited' || p.status === 'not_invited'}>No reply</option>
+                                <option value="0" selected={p.status === 'declined'}>No</option>
+                                {Array.from({ length: p.seats }, (_, i) => (
+                                  <option value={i + 1} selected={p.status === 'attending' && p.attending === i + 1}>Yes, {i + 1}</option>
+                                ))}
+                              </select>
+                              <button class="link" form={`reply-${p.code}`} type="submit">Save</button>
+                            </td>
+                            <td>
+                              <button class="link danger" form={`delete-${p.code}`} type="submit">Delete</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {l.parties.some((p) => p.status === 'not_invited') && (
+                    <button class="button" type="submit">Mark selected as sent</button>
+                  )}
+                </form>
+              )}
+            </section>
+          ))}
+
+          {parties.map((p) => (
+            <>
+              <form id={`reply-${p.code}`} method="post" action="/api/admin" hidden>
+                <input type="hidden" name="action" value="reply" />
+                <input type="hidden" name="code" value={p.code} />
+              </form>
+              <form id={`delete-${p.code}`} method="post" action="/api/admin" hidden data-confirm={`Delete the invitation for ${p.name}?`}>
+                <input type="hidden" name="action" value="delete" />
+                <input type="hidden" name="code" value={p.code} />
+              </form>
+            </>
+          ))}
+
+          <section class="card">
+            <h2>Add guests</h2>
+            <form method="post" action="/api/admin">
+              <input type="hidden" name="action" value="import" />
+              <label>
+                One invitation on each line: name, email, list (A or B), seats
+                <textarea name="lines" rows="6" required placeholder={'John and Jane Smith, jane@example.com, A, 2\n"Lee, Sam", , B, 1'}></textarea>
+              </label>
+              <p class="muted small">
+                You can paste rows from a spreadsheet. The email can be empty. Put a name with a comma in double quotes.
+                The B list order is the order that you add people.
+              </p>
+              <button class="button" type="submit">Add guests</button>
+            </form>
+          </section>
+
+          <section class="card">
+            <h2>Guest limit</h2>
+            <form method="post" action="/api/admin" class="inline">
+              <input type="hidden" name="action" value="settings" />
+              <label>
+                Most guests you can have
+                <input name="capacity" type="number" min="1" value={s.capacity} required />
+              </label>
+              <button class="button" type="submit">Save</button>
+            </form>
+          </section>
+        </>
+      )
+    }
+  </div>
+</Layout>
+
+<style>
+  .admin { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+  .login { max-width: 420px; margin: 40px auto; display: grid; gap: 16px; }
+  .top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .links { display: flex; flex-wrap: wrap; gap: 18px; align-items: baseline; font-size: 0.95rem; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 8px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; color: var(--muted); font-size: 0.9rem; }
+  .tile span { display: block; font-family: var(--serif); font-size: 2.2rem; color: var(--text); line-height: 1.1; }
+  .tile.good span { color: var(--accent); }
+  .tile.bad span { color: #a3402c; }
+  .small { font-size: 0.85rem; }
+  h2 small { font-family: var(--sans); font-size: 0.9rem; }
+  label { display: grid; gap: 6px; font-weight: 600; font-size: 0.95rem; }
+  .check { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+  input:not([type='checkbox']), textarea, select {
+    font: inherit; font-weight: 400; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg);
+  }
+  textarea { width: 100%; font-family: ui-monospace, monospace; font-size: 0.9rem; }
+  .inline { display: flex; gap: 16px; align-items: end; flex-wrap: wrap; }
+  .table-wrap { overflow-x: auto; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: 0.85rem; }
+  tr.declined td { color: var(--muted); }
+  tr.attending td:nth-child(4) { color: var(--accent); font-weight: 600; }
+  .nowrap { white-space: nowrap; }
+  code { font-size: 0.9rem; letter-spacing: 0.05em; }
+  .link { background: none; border: 0; padding: 0; font: inherit; color: var(--accent-dark); text-decoration: underline; cursor: pointer; }
+  .danger { color: #a3402c; }
+  .next { list-style: none; padding: 0; display: grid; gap: 8px; }
+  .next li { display: flex; gap: 16px; align-items: center; }
+  .notice { border-color: var(--accent); }
+  .error { color: #8a3a28; margin: 0; }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.copy').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy ?? '');
+        btn.textContent = 'Copied';
+      } catch {
+        window.prompt('Copy this link:', btn.dataset.copy ?? '');
+      }
+      setTimeout(() => (btn.textContent = 'Copy link'), 1500);
+    });
+  });
+  document.querySelectorAll<HTMLFormElement>('form[data-confirm]').forEach((form) => {
+    form.addEventListener('submit', (e) => {
+      if (!confirm(form.dataset.confirm)) e.preventDefault();
+    });
+  });
+</script>

@@ -3,40 +3,33 @@
 
 export const wedding = {
   couple: { first: 'Dominick', second: 'Sarah', lastName: 'Perini' },
-  date: '[Wedding date]', // Example: 'Saturday, June 12, 2027'
-  dateISO: '', // Example: '2027-06-12T16:00:00-04:00'. Set it to show a countdown.
-  city: '[City, State]',
+  date: 'Sunday, September 5, 2027',
+  dateISO: '2027-09-05T16:00:00-06:00', // Change the time when the ceremony time is known.
+  city: 'Idledale, Colorado',
   venue: {
-    name: '[Venue name]',
-    address: '[Venue street address, City, State ZIP]',
-    mapUrl: '', // A Google Maps or Apple Maps link
+    name: 'Dunafon Castle',
+    address: '18826 Highway 74, Idledale, CO 80453',
+    mapUrl: 'https://www.google.com/maps/search/?api=1&query=Dunafon+Castle+Idledale+CO',
   },
   rsvpDeadline: '[RSVP deadline]', // Example: 'May 1, 2027'
   contactEmail: '[contact email]',
   hashtag: '', // Example: '#ThePerinis'
 };
 
+// Our milestones, oldest first. To add a travel story, copy one block and put it
+// in the correct place by date. "text" can be empty.
 export const story = [
-  {
-    title: 'How we met',
-    date: '[Year]',
-    text: '[Tell the story of how you met. Two or three short sentences are enough.]',
-  },
-  {
-    title: 'Our first date',
-    date: '[Year]',
-    text: '[Where did you go? What happened?]',
-  },
-  {
-    title: 'The proposal',
-    date: '[Year]',
-    text: '[Tell the story of the proposal.]',
-  },
+  { title: 'We met', date: 'October 7, 2022', text: '' },
+  { title: 'We started dating', date: 'October 21, 2022', text: '' },
+  { title: 'We moved into our house in Broomfield', date: 'Thanksgiving 2024', text: '' },
+  { title: 'We got engaged', date: 'July 10, 2025', text: '' },
+  { title: 'We adopted our dog, Sapporo', date: 'January 6, 2026', text: '' },
+  { title: 'We get married', date: 'September 5, 2027', text: 'At Dunafon Castle. We hope to see you there!' },
 ];
 
 export const schedule = [
   {
-    day: '[Day before the wedding]',
+    day: 'Saturday, September 4, 2027',
     events: [
       {
         time: '[Time]',
@@ -47,11 +40,11 @@ export const schedule = [
     ],
   },
   {
-    day: '[Wedding day]',
+    day: 'Sunday, September 5, 2027',
     events: [
-      { time: '[Time]', name: 'Ceremony', place: '[Place]', details: 'Please arrive 20 minutes early.' },
-      { time: '[Time]', name: 'Cocktail hour', place: '[Place]', details: '' },
-      { time: '[Time]', name: 'Dinner and dancing', place: '[Place]', details: '' },
+      { time: '[Time]', name: 'Ceremony', place: 'Dunafon Castle', details: 'Please arrive 20 minutes early.' },
+      { time: '[Time]', name: 'Cocktail hour', place: 'Dunafon Castle', details: '' },
+      { time: '[Time]', name: 'Dinner and dancing', place: 'Dunafon Castle', details: '' },
       { time: '[Time]', name: 'Last dance', place: '', details: '' },
     ],
   },
@@ -86,7 +79,7 @@ export const registry = {
 
 export const faq = [
   { q: 'What is the dress code?', a: '[Dress code, for example: Cocktail attire.]' },
-  { q: 'Can I bring a guest?', a: 'Your invitation shows the names of all invited guests. Please RSVP only for these names.' },
+  { q: 'Can I bring a guest?', a: 'Your invitation shows the number of seats that we saved for you. Please RSVP only for these seats.' },
   { q: 'Are children welcome?', a: '[Yes or no, and any details.]' },
   { q: 'Is the venue indoors or outdoors?', a: '[Indoors, outdoors, or both. Tell guests what shoes to wear.]' },
   { q: 'Is there parking at the venue?', a: '[Parking details.]' },

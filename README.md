@@ -18,17 +18,23 @@ npm run dev
 
 Then open http://localhost:4321. On your computer, RSVPs stay in memory only.
 
-## RSVPs
+## Guest list and RSVPs
 
-The RSVP form sends replies to `/api/rsvp`, a Vercel function. The function keeps the replies in
-[Upstash for Redis](https://vercel.com/marketplace/upstash) (free plan). One reply is kept per email address,
-so a guest can send the form again to change the reply.
+Open `https://theperinis.net/admin` and log in with the `ADMIN_KEY` value.
 
-To download all replies as a spreadsheet (CSV), open:
+- **Add guests:** Paste one invitation on each line: `name, email, list, seats`. The list is `A` or `B`.
+  Each invitation gets a 6-character code and its own RSVP link.
+- **Send invitations:** Send each guest their link (or print the code on the invitation). Then select the
+  invitations and click **Mark selected as sent**. Only sent invitations can RSVP.
+- **Backfill from the B list:** An invitation holds all its seats until the guests reply. A "no" frees all
+  seats, and a "yes" for fewer people frees the rest. **Invite next** shows the next B-list invitations, in the
+  order you added them, that fit in the open seats.
+- **Guest limit:** Set it on the admin page. The default is 150 guests.
+- **Phone or paper replies:** Use **Change reply** on the guest row.
+- **Downloads:** The guest list (with links) and all RSVP answers download as CSV files.
 
-```
-https://theperinis.net/api/rsvps?key=YOUR_ADMIN_KEY
-```
+Guests can send the RSVP form again from the same link to change a reply. The data is kept in
+[Upstash for Redis](https://vercel.com/marketplace/upstash) (free plan).
 
 ### Set up RSVP storage on Vercel
 
