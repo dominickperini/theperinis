@@ -1,4 +1,4 @@
-import { Redis } from '@upstash/redis';
+import { getAll, setItem, storageReady } from './store';
 
 export interface Rsvp {
   name: string;
@@ -10,49 +10,22 @@ export interface Rsvp {
   song: string;
   message: string;
   submittedAt: string;
+  code?: string;
+  party?: string;
 }
 
 const KEY = 'rsvps';
 
-// Vercel sets KV_* when you connect Upstash for Redis from the Vercel dashboard.
-// UPSTASH_* is the name Upstash uses when you set it up yourself.
-function env(name: string): string | undefined {
-  return process.env[name] ?? (import.meta.env as Record<string, string | undefined>)[name];
-}
-
-function getRedis(): Redis | null {
-  const url = env('KV_REST_API_URL') ?? env('UPSTASH_REDIS_REST_URL');
-  const token = env('KV_REST_API_TOKEN') ?? env('UPSTASH_REDIS_REST_TOKEN');
-  return url && token ? new Redis({ url, token }) : null;
-}
-
-// Local development without a database keeps replies in memory only.
-const memory = new Map<string, Rsvp>();
-
-export function storageReady(): boolean {
-  return getRedis() !== null || import.meta.env.DEV;
-}
+export { storageReady };
 
 export async function saveRsvp(rsvp: Rsvp): Promise<void> {
-  const id = rsvp.email.toLowerCase();
-  const redis = getRedis();
-  if (redis) {
-    // One entry per email, so a guest can send the form again to change a reply.
-    await redis.hset(KEY, { [id]: JSON.stringify(rsvp) });
-  } else {
-    memory.set(id, rsvp);
-  }
+  // One entry per invitation (or per email without a code), so a guest can
+  // send the form again to change a reply.
+  await setItem(KEY, rsvp.code || rsvp.email.toLowerCase(), rsvp);
 }
 
 export async function listRsvps(): Promise<Rsvp[]> {
-  const redis = getRedis();
-  let rows: Rsvp[];
-  if (redis) {
-    const all = (await redis.hgetall<Record<string, Rsvp | string>>(KEY)) ?? {};
-    rows = Object.values(all).map((v) => (typeof v === 'string' ? JSON.parse(v) : v));
-  } else {
-    rows = [...memory.values()];
-  }
+  const rows = await getAll<Rsvp>(KEY);
   return rows.sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
 }
 
@@ -86,7 +59,7 @@ export function parseRsvp(form: FormData): { rsvp?: Rsvp; error?: string } {
 
 export function toCsv(rows: Rsvp[]): string {
   const cols: (keyof Rsvp)[] = [
-    'submittedAt', 'name', 'email', 'attending', 'guests', 'guestNames', 'dietary', 'song', 'message',
+    'submittedAt', 'party', 'code', 'name', 'email', 'attending', 'guests', 'guestNames', 'dietary', 'song', 'message',
   ];
   const cell = (v: unknown) => {
     let s = String(v ?? '');
