@@ -22,6 +22,29 @@ import { faq } from '../data/wedding';
 
 <style>
   details { padding: 20px 24px; margin-bottom: 12px; }
-  summary { cursor: pointer; font-family: var(--serif); font-size: 1.35rem; }
-  details p { margin: 12px 0 0; }
+  summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--display);
+    font-size: 1.2rem;
+    letter-spacing: -0.01em;
+  }
+  summary::-webkit-details-marker { display: none; }
+  /* A plus sign that turns into a minus sign when the answer opens. */
+  summary::after {
+    content: '';
+    flex: none;
+    width: 14px;
+    height: 14px;
+    background:
+      linear-gradient(currentColor, currentColor) center / 14px 1px no-repeat,
+      linear-gradient(currentColor, currentColor) center / 1px 14px no-repeat;
+    transition: transform 0.5s var(--ease);
+  }
+  details[open] summary::after { transform: rotate(90deg); background-size: 14px 1px, 1px 0; }
+  details p { margin: 12px 0 0; color: var(--muted); }
 </style>
