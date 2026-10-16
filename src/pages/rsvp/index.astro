@@ -1,0 +1,120 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { wedding } from '../../data/wedding';
+---
+
+<Layout title="RSVP">
+  <div class="container">
+    <div class="page-title">
+      <p class="eyebrow">RSVP</p>
+      <h1>Will you join us?</h1>
+      <p>Please reply before {wedding.rsvpDeadline}.</p>
+    </div>
+
+    <p class="error card" role="alert" hidden></p>
+
+    <form class="card" method="post" action="/api/rsvp">
+      <label>
+        Your full name
+        <input name="name" required autocomplete="name" maxlength="200" />
+      </label>
+
+      <label>
+        Email
+        <input name="email" type="email" required autocomplete="email" maxlength="200" />
+        <small class="muted">We use your email only to send you wedding updates.</small>
+      </label>
+
+      <fieldset>
+        <legend>Can you attend?</legend>
+        <label class="choice"><input type="radio" name="attending" value="yes" required /> Yes, I will be there</label>
+        <label class="choice"><input type="radio" name="attending" value="no" /> No, I cannot attend</label>
+      </fieldset>
+
+      <div class="if-yes">
+        <label>
+          Number of guests (include yourself)
+          <input name="guests" type="number" min="1" max="10" value="1" inputmode="numeric" />
+        </label>
+
+        <label>
+          Names of the other guests in your party
+          <input name="guestNames" maxlength="500" />
+        </label>
+
+        <label>
+          Food allergies or diet needs
+          <input name="dietary" maxlength="500" />
+        </label>
+
+        <label>
+          A song that will get you dancing
+          <input name="song" maxlength="200" />
+        </label>
+      </div>
+
+      <label>
+        A message for us (optional)
+        <textarea name="message" rows="4" maxlength="2000"></textarea>
+      </label>
+
+      <!-- Bots fill this in. People do not see it. -->
+      <label class="hp" aria-hidden="true">
+        Website <input name="website" tabindex="-1" autocomplete="off" />
+      </label>
+
+      <button class="button" type="submit">Send RSVP</button>
+      <p class="muted small">To change your reply, send the form again with the same email.</p>
+    </form>
+  </div>
+</Layout>
+
+<style>
+  form { display: grid; gap: 20px; }
+  label { display: grid; gap: 6px; font-weight: 600; font-size: 0.95rem; }
+  input:not([type='radio']), textarea {
+    font: inherit;
+    font-weight: 400;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    width: 100%;
+  }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+  legend { font-weight: 600; font-size: 0.95rem; margin-bottom: 6px; }
+  .choice { display: flex; align-items: center; gap: 10px; font-weight: 400; font-size: 1rem; }
+  .choice input { accent-color: var(--accent); width: 18px; height: 18px; }
+  .if-yes { display: grid; gap: 20px; }
+  small { font-weight: 400; }
+  .small { font-size: 0.9rem; margin: 0; }
+  .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+  .error { border-color: #b4553f; color: #8a3a28; }
+  button { justify-self: start; }
+</style>
+
+<script>
+  const messages: Record<string, string> = {
+    name: 'Please type your name.',
+    email: 'Please type a correct email address.',
+    attending: 'Please tell us if you can attend.',
+    server: 'We could not save your RSVP. Please try again, or send us an email.',
+  };
+  const code = new URLSearchParams(location.search).get('error');
+  const box = document.querySelector<HTMLElement>('.error');
+  if (code && box) {
+    box.textContent = messages[code] ?? messages.server;
+    box.hidden = false;
+  }
+
+  // Show the guest questions only when the guest says yes.
+  const form = document.querySelector('form')!;
+  const extra = form.querySelector<HTMLElement>('.if-yes')!;
+  const sync = () => {
+    const no = form.querySelector<HTMLInputElement>('input[name="attending"][value="no"]')!.checked;
+    extra.hidden = no;
+  };
+  form.addEventListener('change', sync);
+  sync();
+</script>

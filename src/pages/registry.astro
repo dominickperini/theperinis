@@ -1,0 +1,32 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { registry } from '../data/wedding';
+---
+
+<Layout title="Registry">
+  <div class="container center">
+    <div class="page-title">
+      <p class="eyebrow">Registry</p>
+      <h1>Gifts</h1>
+    </div>
+    <p class="intro">{registry.intro}</p>
+    <div class="stores">
+      {
+        registry.links.map((r) =>
+          r.url ? (
+            <a class="button" href={r.url} target="_blank" rel="noopener">{r.name}</a>
+          ) : (
+            <span class="card">{r.name}</span>
+          ),
+        )
+      }
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .center { text-align: center; }
+  .intro { max-width: 520px; margin: 0 auto 32px; }
+  .stores { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+  .stores .card { margin: 0; }
+</style>

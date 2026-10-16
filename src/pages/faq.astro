@@ -1,0 +1,27 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { faq } from '../data/wedding';
+---
+
+<Layout title="FAQ">
+  <div class="container">
+    <div class="page-title">
+      <p class="eyebrow">FAQ</p>
+      <h1>Questions and answers</h1>
+    </div>
+    {
+      faq.map((item) => (
+        <details class="card">
+          <summary>{item.q}</summary>
+          <p>{item.a}</p>
+        </details>
+      ))
+    }
+  </div>
+</Layout>
+
+<style>
+  details { padding: 20px 24px; margin-bottom: 12px; }
+  summary { cursor: pointer; font-family: var(--serif); font-size: 1.35rem; }
+  details p { margin: 12px 0 0; }
+</style>

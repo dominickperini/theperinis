@@ -1,0 +1,52 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { travel, wedding } from '../data/wedding';
+---
+
+<Layout title="Travel">
+  <div class="container">
+    <div class="page-title">
+      <p class="eyebrow">Travel</p>
+      <h1>Getting there</h1>
+    </div>
+
+    <section class="card">
+      <h2>The venue</h2>
+      <p><strong>{wedding.venue.name}</strong><br />{wedding.venue.address}</p>
+      {wedding.venue.mapUrl && <a href={wedding.venue.mapUrl} target="_blank" rel="noopener">Open the map</a>}
+    </section>
+
+    <section class="card">
+      <h2>Airports</h2>
+      <ul>{travel.airports.map((a) => <li><strong>{a.name}</strong>: {a.note}</li>)}</ul>
+    </section>
+
+    <section class="card">
+      <h2>Hotels</h2>
+      {
+        travel.hotels.map((h) => (
+          <div class="hotel">
+            <h3>{h.url ? <a href={h.url} target="_blank" rel="noopener">{h.name}</a> : h.name}</h3>
+            <p class="muted">{h.address}</p>
+            <p>{h.note}</p>
+          </div>
+        ))
+      }
+    </section>
+
+    <section class="card">
+      <h2>Getting around</h2>
+      <p>{travel.gettingAround}</p>
+    </section>
+
+    <section class="card">
+      <h2>Things to do</h2>
+      <ul>{travel.thingsToDo.map((t) => <li>{t}</li>)}</ul>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .card p:last-child, .card ul { margin-bottom: 0; }
+  .hotel + .hotel { border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
