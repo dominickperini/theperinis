@@ -5,11 +5,11 @@ export const wedding = {
   couple: { first: 'Dominick', second: 'Sarah', lastName: 'Perini' },
   date: 'Sunday, September 5, 2027',
   dateISO: '2027-09-05T16:00:00-06:00', // Change the time when the ceremony time is known.
-  city: 'Idledale, Colorado',
+  city: 'Indian Hills, Colorado',
   venue: {
     name: 'Dunafon Castle',
-    address: '18826 Highway 74, Idledale, CO 80453',
-    mapUrl: 'https://www.google.com/maps/search/?api=1&query=Dunafon+Castle+Idledale+CO',
+    address: '24020 SH-74, Indian Hills, CO 80454',
+    mapUrl: 'https://www.google.com/maps/search/?api=1&query=Dunafon+Castle+24020+SH-74+Indian+Hills+CO+80454',
   },
   rsvpDeadline: '[RSVP deadline]', // Example: 'May 1, 2027'
   contactEmail: '[contact email]',
