@@ -1,0 +1,30 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { story } from '../data/wedding';
+---
+
+<Layout title="Our Story">
+  <div class="container">
+    <div class="page-title">
+      <p class="eyebrow">Our Story</p>
+      <h1>How we got here</h1>
+    </div>
+    <ol class="timeline">
+      {
+        story.map((item) => (
+          <li class="card">
+            <p class="eyebrow">{item.date}</p>
+            <h3>{item.title}</h3>
+            <p>{item.text}</p>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</Layout>
+
+<style>
+  .timeline { list-style: none; padding: 0; margin: 0; }
+  .timeline p:last-child { margin-bottom: 0; }
+  .timeline .eyebrow { margin: 0 0 6px; }
+</style>

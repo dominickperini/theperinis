@@ -1,0 +1,24 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Thank you">
+  <div class="container center">
+    <p class="eyebrow">RSVP received</p>
+    <h1>Thank you!</h1>
+    <p class="yes">We are so happy that you can come. We will see you there!</p>
+    <p class="no" hidden>We will miss you. Thank you for telling us.</p>
+    <p class="muted">To change your reply, <a href="/rsvp">send the form again</a> with the same email.</p>
+  </div>
+</Layout>
+
+<style>
+  .center { text-align: center; padding-top: 40px; }
+</style>
+
+<script>
+  if (new URLSearchParams(location.search).get('attending') === 'no') {
+    document.querySelector<HTMLElement>('.yes')!.hidden = true;
+    document.querySelector<HTMLElement>('.no')!.hidden = false;
+  }
+</script>

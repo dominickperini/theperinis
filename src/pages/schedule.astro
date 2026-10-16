@@ -1,0 +1,40 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { schedule } from '../data/wedding';
+---
+
+<Layout title="Schedule">
+  <div class="container">
+    <div class="page-title">
+      <p class="eyebrow">Schedule</p>
+      <h1>The weekend</h1>
+    </div>
+    {
+      schedule.map((day) => (
+        <section class="day">
+          <h2>{day.day}</h2>
+          {day.events.map((event) => (
+            <div class="card event">
+              <p class="time">{event.time}</p>
+              <div>
+                <h3>{event.name}</h3>
+                {event.place && <p class="muted">{event.place}</p>}
+                {event.details && <p>{event.details}</p>}
+              </div>
+            </div>
+          ))}
+        </section>
+      ))
+    }
+  </div>
+</Layout>
+
+<style>
+  .day { margin-bottom: 40px; }
+  .day h2 { text-align: center; }
+  .event { display: grid; grid-template-columns: 110px 1fr; gap: 16px; }
+  .event h3 { margin-bottom: 2px; }
+  .event p { margin: 0; }
+  .time { font-family: var(--serif); font-size: 1.3rem; color: var(--accent); }
+  @media (max-width: 520px) { .event { grid-template-columns: 1fr; gap: 4px; } }
+</style>

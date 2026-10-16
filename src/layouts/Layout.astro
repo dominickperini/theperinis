@@ -1,0 +1,144 @@
+---
+import '../styles/global.css';
+import { nav, wedding } from '../data/wedding';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title, description = `The wedding of ${wedding.couple.first} and ${wedding.couple.second}.` } = Astro.props;
+const names = `${wedding.couple.first} & ${wedding.couple.second}`;
+const fullTitle = title ? `${title} | ${names}` : names;
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="monogram" href="/">{wedding.couple.first[0]} &amp; {wedding.couple.second[0]}</a>
+        <details class="menu">
+          <summary aria-label="Menu">Menu</summary>
+          <nav>
+            {
+              nav.map((item) => (
+                <a href={item.href} aria-current={path === item.href ? 'page' : undefined}>
+                  {item.label}
+                </a>
+              ))
+            }
+          </nav>
+        </details>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <p>{names} &middot; {wedding.date}</p>
+      {wedding.hashtag && <p>{wedding.hashtag}</p>}
+    </footer>
+  </body>
+</html>
+
+<style>
+  .site-header {
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .monogram {
+    font-family: var(--serif);
+    font-size: 1.6rem;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .menu summary {
+    list-style: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .menu summary::-webkit-details-marker { display: none; }
+  .menu nav {
+    position: absolute;
+    right: 0;
+    left: 0;
+    top: 100%;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    padding: 8px 20px 16px;
+  }
+  .menu nav a {
+    padding: 10px 0;
+    text-decoration: none;
+    color: var(--text);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+  }
+  .menu nav a[aria-current='page'] { color: var(--accent); font-weight: 600; }
+
+  @media (min-width: 820px) {
+    .menu summary { display: none; }
+    .menu nav {
+      position: static;
+      flex-direction: row;
+      gap: 26px;
+      padding: 0;
+      border: 0;
+      background: none;
+    }
+  }
+
+  .site-footer {
+    text-align: center;
+    padding: 40px 20px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-family: var(--serif);
+    font-size: 1.15rem;
+  }
+  .site-footer p { margin: 0.2em 0; }
+</style>
+
+<script>
+  // On wide screens the menu must always be open.
+  const menu = document.querySelector<HTMLDetailsElement>('.menu');
+  const wide = window.matchMedia('(min-width: 820px)');
+  const sync = () => { if (menu) menu.open = wide.matches; };
+  sync();
+  wide.addEventListener('change', sync);
+</script>

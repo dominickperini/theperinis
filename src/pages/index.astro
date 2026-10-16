@@ -1,0 +1,48 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { wedding } from '../data/wedding';
+---
+
+<Layout>
+  <section class="hero container">
+    <p class="eyebrow">We are getting married</p>
+    <h1>{wedding.couple.first} <span class="amp">&amp;</span> {wedding.couple.second}</h1>
+    <hr class="divider" />
+    <p class="date">{wedding.date}</p>
+    <p class="place">{wedding.venue.name} &middot; {wedding.city}</p>
+    {wedding.dateISO && <p class="countdown muted" data-date={wedding.dateISO}></p>}
+    <a class="button" href="/rsvp">RSVP</a>
+    <p class="muted small">Please reply before {wedding.rsvpDeadline}.</p>
+  </section>
+
+  <section class="container links">
+    <a class="card" href="/story"><h3>Our Story</h3><p class="muted">How it all started.</p></a>
+    <a class="card" href="/schedule"><h3>Schedule</h3><p class="muted">Times and places for the weekend.</p></a>
+    <a class="card" href="/travel"><h3>Travel</h3><p class="muted">Airports, hotels, and directions.</p></a>
+    <a class="card" href="/faq"><h3>FAQ</h3><p class="muted">Answers to common questions.</p></a>
+  </section>
+</Layout>
+
+<style>
+  .hero { text-align: center; padding: 40px 20px 56px; }
+  .amp { font-style: italic; color: var(--accent); }
+  .date { font-family: var(--serif); font-size: 1.8rem; margin: 0; }
+  .place { margin: 4px 0 28px; color: var(--muted); letter-spacing: 0.05em; }
+  .countdown { margin-top: -12px; margin-bottom: 28px; }
+  .small { font-size: 0.9rem; margin-top: 14px; }
+  .links { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); max-width: 680px; }
+  .links .card { text-decoration: none; color: inherit; margin: 0; transition: border-color 0.2s; }
+  .links .card:hover { border-color: var(--accent); }
+  .links h3 { margin-bottom: 4px; }
+  .links p { margin: 0; }
+</style>
+
+<script>
+  const el = document.querySelector<HTMLElement>('.countdown');
+  if (el?.dataset.date) {
+    const days = Math.ceil((new Date(el.dataset.date).getTime() - Date.now()) / 86400000);
+    if (days > 1) el.textContent = `${days} days to go`;
+    else if (days === 1) el.textContent = 'Tomorrow!';
+    else if (days === 0) el.textContent = 'Today!';
+  }
+</script>
