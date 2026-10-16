@@ -12,8 +12,9 @@ function keyMatches(given: string, expected: string): boolean {
 
 // Download all replies as a CSV file: /api/rsvps?key=YOUR_ADMIN_KEY
 export const GET: APIRoute = async ({ url }) => {
-  const expected = process.env.ADMIN_KEY ?? import.meta.env.ADMIN_KEY;
-  const given = url.searchParams.get('key') ?? '';
+  // Trim spaces and line breaks that a copy and paste can add.
+  const expected = (process.env.ADMIN_KEY ?? import.meta.env.ADMIN_KEY ?? '').trim();
+  const given = (url.searchParams.get('key') ?? '').trim();
   if (!expected || !keyMatches(given, expected)) {
     return new Response('Not found', { status: 404 });
   }
