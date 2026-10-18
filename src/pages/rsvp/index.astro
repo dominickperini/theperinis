@@ -144,6 +144,18 @@ Astro.response.headers.set('Cache-Control', 'no-store');
   .small { font-size: 0.9rem; margin: 0; }
   .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
   .party { margin: 0; font-size: 1.05rem; }
+  /* A small woven houndstooth stamp on the RSVP card. */
+  form.card { position: relative; }
+  form.card::after {
+    content: '';
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 32px;
+    height: 32px;
+    background: var(--houndstooth) 0 0 / 8px 8px;
+    opacity: 0.7;
+  }
   .error { border-color: #b4553f; color: #8a3a28; }
   button { justify-self: start; }
 </style>

@@ -28,7 +28,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500&family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500&family=Inter:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300..500;1,9..144,300..500&family=IBM+Plex+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <script is:inline>document.documentElement.classList.add('js');</script>
@@ -75,6 +75,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     backdrop-filter: saturate(1.4) blur(14px);
     border-bottom: 1px solid transparent;
     transition: border-color 0.4s var(--ease);
+    view-transition-name: site-header;
   }
   .site-header.scrolled { border-bottom-color: var(--line); }
   .header-inner {
@@ -89,7 +90,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     font-family: var(--display);
     font-weight: 500;
     font-size: 1.05rem;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-decoration: none;
     color: var(--text);
   }
@@ -105,9 +106,10 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   .menu summary {
     list-style: none;
     cursor: pointer;
+    font-family: var(--mono);
     font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.2em;
+    font-weight: 500;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
   }
   .menu summary::-webkit-details-marker { display: none; }
@@ -127,12 +129,13 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     padding: 10px 0;
     text-decoration: none;
     color: var(--text);
-    letter-spacing: 0.18em;
+    font-family: var(--mono);
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     font-size: 0.72rem;
-    font-weight: 500;
+    font-weight: 400;
   }
-  .menu nav a[aria-current='page'] { font-weight: 600; }
+  .menu nav a[aria-current='page'] { font-weight: 500; }
 
   @media (min-width: 820px) {
     .menu summary { display: none; }
@@ -170,16 +173,16 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   .footer-band {
     height: 28px;
     margin: 0 -20px 44px;
-    background: var(--houndstooth) 0 0 / 14px 14px;
+    background: var(--houndstooth) 0 0 / 12px 12px;
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
     mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
-    opacity: 0.9;
+    opacity: 0.55;
   }
   .footer-names {
     font-family: var(--display);
     font-weight: 300;
-    font-size: 1.6rem;
-    letter-spacing: -0.02em;
+    font-size: 1.8rem;
+    letter-spacing: -0.03em;
     color: var(--text);
     margin: 0 0 6px;
   }
@@ -199,6 +202,14 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   const onScroll = () => header?.classList.toggle('scrolled', window.scrollY > 8);
   onScroll();
   window.addEventListener('scroll', onScroll, { passive: true });
+
+  // Film loops play with no sound. When the visitor asks for less motion, they stay still.
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.querySelectorAll<HTMLVideoElement>('video[data-loop]').forEach((v) => {
+      v.removeAttribute('autoplay');
+      v.pause();
+    });
+  }
 
   // Content fades up when it comes into view. Items in the same group start one after the other.
   const items = document.querySelectorAll<HTMLElement>(
