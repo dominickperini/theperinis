@@ -32,6 +32,7 @@ import { storyPhotos } from '../data/media';
         ))
       }
     </ol>
+    <div class="wide"><hr class="oak-rule shelf" /></div>
   </div>
 </Layout>
 
@@ -52,6 +53,7 @@ import { storyPhotos } from '../data/media';
     scrollbar-width: thin;
     scrollbar-color: var(--text) transparent;
   }
+  .shelf { height: 14px; margin-top: 8px; box-shadow: 0 10px 18px -12px rgba(42, 40, 36, 0.5), inset 0 -1px 0 rgba(42, 40, 36, 0.2); }
   .strip:focus-visible { outline-offset: -2px; }
   .frame-item { scroll-snap-align: start; border-top: 1px solid var(--text); padding-top: 14px; }
   .frame-item :global(.photo) { margin-bottom: 18px; }
