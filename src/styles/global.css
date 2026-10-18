@@ -26,6 +26,10 @@
   --mono: var(--sans);
 
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Motion. Precise and quiet, like a well made instrument:
+     --machined starts and stops with control, --glide slows like a car to a stop. */
+  --machined: cubic-bezier(0.65, 0, 0.35, 1);
+  --glide: cubic-bezier(0.16, 1, 0.3, 1);
   --radius: 0;
   --gutter: clamp(20px, 4vw, 48px);
   --wide: 1240px;
@@ -144,21 +148,19 @@ main { padding: 48px 0 112px; }
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  transition: color 0.45s var(--ease), border-color 0.45s var(--ease);
+  transition: background-color 0.5s var(--machined), border-color 0.5s var(--machined);
 }
-/* On hover, a moss panel slides in from the left. */
-.button::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: right;
-  transition: transform 0.45s var(--ease);
+/* On hover the button turns moss and the arrow makes one full cycle:
+   it leaves on the right and comes back from the left. */
+.button:hover { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+.button:hover .arrow, a:hover > .go { animation: cycle 0.7s var(--machined); }
+@keyframes cycle {
+  0% { transform: none; opacity: 1; }
+  45% { transform: translateX(110%); opacity: 0; }
+  55% { transform: translateX(-110%); opacity: 0; }
+  100% { transform: none; opacity: 1; }
 }
-.button:hover { color: var(--bg); border-color: var(--accent); }
-.button:hover::before { transform: scaleX(1); transform-origin: left; }
+.arrow, .go { display: inline-block; }
 
 .divider {
   width: 72px;
@@ -178,29 +180,79 @@ main { padding: 48px 0 112px; }
 .photo img, .photo video { display: block; width: 100%; height: 100%; object-fit: cover; }
 .photo figcaption { margin-top: 10px; display: flex; justify-content: space-between; gap: 16px; }
 
-/* Photos settle as they scroll into view (browsers that support it). */
-@supports (animation-timeline: view()) {
-  .photo .frame > :is(img, video, picture) {
-    animation: settle linear both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 45%;
-  }
-  @keyframes settle { from { transform: scale(1.08); } to { transform: scale(1); } }
-}
-
-/* Pages fade into the next page (browsers that support it). */
+/* Pages: the old page goes quickly, the new page settles into place. */
 @view-transition { navigation: auto; }
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.45s; animation-timing-function: var(--ease); }
+::view-transition-old(root) { animation: 0.22s var(--machined) both vt-out; }
+::view-transition-new(root) { animation: 0.6s var(--glide) 0.08s both vt-in; }
+@keyframes vt-out { to { opacity: 0; } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(14px); } }
 
 /* Scroll reveal. The layout script adds .js to <html>, so without
-   JavaScript all content shows at once. */
+   JavaScript all content shows at once.
+   - Text opens like a shutter: a clean edge moves up and shows it.
+   - Photos open from the horizon: a thin line at the middle opens up and down.
+   - A section rule draws from left to right first, then its text follows. */
 .js .reveal {
-  opacity: 0;
-  transform: translateY(22px);
-  transition: opacity 1.1s var(--ease), transform 1.1s var(--ease);
+  clip-path: inset(0 0 100% 0);
+  transform: translateY(0.5em);
+  transition: clip-path 0.9s var(--machined), transform 0.9s var(--machined);
   transition-delay: var(--delay, 0s);
 }
-.js .reveal.in { opacity: 1; transform: none; }
+.js .reveal.in { clip-path: inset(0 0 -1px 0); transform: none; }
+
+.js .photo.reveal { clip-path: none; transform: none; }
+.js .photo.reveal .frame {
+  clip-path: inset(50% 50% 50% 50%);
+  transition: clip-path 1.5s var(--machined);
+  transition-delay: var(--delay, 0s);
+}
+.js .photo.reveal .frame > * { transform: scale(1.12); transition: transform 2.2s var(--glide); transition-delay: var(--delay, 0s); }
+.js .photo.reveal figcaption { opacity: 0; transition: opacity 0.8s var(--ease); transition-delay: calc(var(--delay, 0s) + 0.9s); }
+.js .photo.reveal.in .frame { animation: horizon 1.5s var(--machined) both; animation-delay: var(--delay, 0s); clip-path: inset(0); }
+.js .photo.reveal.in .frame > * { transform: none; }
+.js .photo.reveal.in figcaption { opacity: 1; }
+@keyframes horizon {
+  0% { clip-path: inset(50% 50% 50% 50%); }
+  35% { clip-path: inset(calc(50% - 1px) 0 calc(50% - 1px) 0); }
+  100% { clip-path: inset(0); }
+}
+
+.ruled { position: relative; border-top: 0 !important; }
+.ruled::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--text);
+  transform-origin: left;
+}
+.js .ruled.reveal { clip-path: none; transform: none; }
+.js .ruled.reveal::before { transform: scaleX(0); transition: transform 1.2s var(--machined) var(--delay, 0s); }
+.js .ruled.reveal > * { opacity: 0; transform: translateY(8px); transition: opacity 0.8s var(--ease), transform 0.8s var(--glide); transition-delay: calc(var(--delay, 0s) + 0.45s); }
+.js .ruled.reveal.in::before { transform: none; }
+.js .ruled.reveal.in > * { opacity: 1; transform: none; }
+
+/* A thin moss line under the header shows how far down the page you are,
+   like the route line on a map (browsers that support it). */
+@supports (animation-timeline: scroll()) {
+  .site-header::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: var(--accent);
+    transform-origin: left;
+    animation: route linear both;
+  }
+  /* A separate rule, so the CSS minifier does not merge the timeline into the
+     animation shorthand (browsers reject that form). */
+  header.site-header::after { animation-timeline: scroll(root); }
+  @keyframes route { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+}
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -210,6 +262,10 @@ main { padding: 48px 0 112px; }
     transition-duration: 0.01ms !important;
     transition-delay: 0s !important;
   }
-  .js .reveal { opacity: 1; transform: none; }
+  .js .reveal, .js .reveal .frame, .js .reveal .frame > *, .js .reveal figcaption, .js .ruled.reveal > * {
+    clip-path: none !important; transform: none !important; opacity: 1 !important; animation: none !important;
+  }
+  .js .ruled.reveal::before { transform: none; }
+  .site-header::after { display: none; }
   @view-transition { navigation: none; }
 }

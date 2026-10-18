@@ -19,11 +19,12 @@ import { storyPhotos } from '../data/media';
     <ol class="strip" tabindex="0" aria-label="Our story, oldest first">
       {
         story.map((item, i) => (
-          <li class="frame-item reveal" style={`--delay: ${Math.min(i, 4) * 0.08}s`}>
+          <li class="frame-item ruled reveal" style={`--delay: ${Math.min(i, 4) * 0.08}s`}>
             <Photo
               media={{ ...storyPhotos[i % storyPhotos.length], note: item.date }}
               index={i + 1}
               ratio="4 / 5"
+              class="reveal"
               sizes="(min-width: 900px) 30vw, 78vw"
             />
             <h3>{item.title}</h3>
@@ -53,7 +54,7 @@ import { storyPhotos } from '../data/media';
     scrollbar-color: var(--text) transparent;
   }
   .strip:focus-visible { outline-offset: -2px; }
-  .frame-item { scroll-snap-align: start; border-top: 1px solid var(--text); padding-top: 14px; }
+  .frame-item { scroll-snap-align: start; padding-top: 14px; }
   .frame-item :global(.photo) { margin-bottom: 18px; }
   .frame-item :global(figcaption) { order: -1; margin: 0 0 12px; }
   .frame-item :global(.photo) { display: flex; flex-direction: column; }

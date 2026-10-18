@@ -61,7 +61,7 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
   </section>
 
   <section class="wide notes" aria-labelledby="notes-title">
-    <header class="notes-head reveal">
+    <header class="notes-head ruled reveal">
       <p class="label">§ 01</p>
       <h2 id="notes-title">Field notes</h2>
       <p class="lead">A few places and moments that brought us here.</p>
@@ -81,7 +81,7 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
   </section>
 
   <nav class="wide index" aria-label="More about the wedding">
-    <p class="label index-label reveal">§ 02 &nbsp; The details</p>
+    <p class="label index-label ruled reveal"><span>§ 02 &nbsp; The details</span></p>
     {
       links.map((link, i) => (
         <a class="index-link reveal" href={link.href} style={`--delay: ${i * 0.07}s`}>
@@ -102,11 +102,13 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
   .hero-photo :global(.frame) {
     height: min(78svh, 860px);
     min-height: 360px;
-    animation: unveil 1.8s var(--ease) 0.1s both;
+    animation: horizon 1.9s var(--machined) 0.15s both;
   }
+  /* The hero photo opens from the horizon, then the view settles like a lens. */
+  .hero-photo :global(.frame > *) { animation: lens 2.8s var(--glide) 0.15s both; }
+  @keyframes lens { from { transform: scale(1.14); } }
   @media (max-width: 720px) { .hero-photo :global(.frame) { height: 58svh; min-height: 320px; } }
   .hero-photo :global(figcaption) { animation: rise 1s var(--ease) 1s both; }
-  @keyframes unveil { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
 
   .hero-text {
     display: grid;
@@ -147,7 +149,16 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
   .specs > div + div { border-left: 1px solid var(--line); padding-left: 16px; }
   .specs dt { margin: 0 0 6px; }
   .specs dd { margin: 0; font-size: 0.98rem; line-height: 1.4; }
-  .count { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .count { font-family: var(--mono); font-variant-numeric: tabular-nums; display: flex; }
+  /* Odometer: each digit is a reel that turns to its number. */
+  .count :global(.reel) { display: inline-block; height: 1.4em; overflow: hidden; }
+  .count :global(.reel > span) {
+    display: flex;
+    flex-direction: column;
+    transition: transform var(--t, 2s) var(--glide);
+    transition-delay: var(--d, 0s);
+  }
+  .count :global(.reel i) { font-style: normal; height: 1.4em; line-height: 1.4; }
   @media (max-width: 520px) {
     .specs { grid-template-columns: 1fr 1fr; }
     .specs > div + div:nth-child(3) { grid-column: 1 / -1; border-left: 0; padding-left: 0; border-top: 1px solid var(--line); }
@@ -155,8 +166,6 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
 
   .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; }
   .cta .small { margin: 0; }
-  .arrow { transition: transform 0.45s var(--ease); }
-  .button:hover .arrow { transform: translateX(4px); }
 
   /* ---------- Field notes ---------- */
   .notes { padding-bottom: clamp(72px, 10vw, 140px); }
@@ -203,20 +212,24 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
     position: relative;
   }
   .index-link::before {
-    /* A moss line runs across the row on hover. */
+    /* On hover a fine ruler draws along the row, like the scale on an instrument. */
     content: '';
     position: absolute;
     left: 0;
     right: 0;
-    bottom: -1px;
-    height: 1px;
-    background: var(--accent);
-    transform: scaleX(0);
-    transform-origin: right;
-    transition: transform 0.6s var(--ease);
+    bottom: 0;
+    height: 7px;
+    background:
+      linear-gradient(var(--accent), var(--accent)) left bottom / 100% 1px no-repeat,
+      repeating-linear-gradient(90deg, var(--accent) 0 1px, transparent 1px 12px) left bottom / 100% 4px no-repeat,
+      repeating-linear-gradient(90deg, var(--accent) 0 1px, transparent 1px 60px) left bottom / 100% 7px no-repeat;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 0.8s var(--machined);
   }
   .index-link:hover { color: var(--text); }
-  .index-link:hover::before { transform: scaleX(1); transform-origin: left; }
+  .index-link:hover::before { clip-path: inset(0 0 0 0); }
+  .index-link .num { transition: color 0.4s var(--machined); }
+  .index-link:hover .num { color: var(--accent); }
   .num { grid-area: num; }
   .title {
     grid-area: title;
@@ -225,36 +238,50 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
     font-size: clamp(1.7rem, 4.5vw, 2.6rem);
     letter-spacing: -0.015em;
     line-height: 1.1;
-    transition: transform 0.6s var(--ease);
   }
   .text { grid-area: text; font-size: 1rem; }
-  .go { grid-area: go; align-self: center; font-size: 1.3rem; transition: transform 0.6s var(--ease); }
-  .index-link:hover .title, .index-link:hover .go { transform: translateX(6px); }
+  .go { grid-area: go; align-self: center; font-size: 1.3rem; }
   @media (min-width: 720px) {
     .index-link { grid-template-columns: 2fr 6fr 4fr auto; grid-template-areas: 'num title text go'; }
   }
 </style>
 
 <script>
-  // Count up to the number of days before the wedding.
+  // Days to the wedding, shown on odometer reels.
   const box = document.querySelector<HTMLElement>('.countdown');
   const out = box?.querySelector<HTMLElement>('.count');
   if (box?.dataset.date && out) {
     const days = Math.ceil((new Date(box.dataset.date).getTime() - Date.now()) / 86400000);
     if (days > 0) {
       box.hidden = false;
+      out.setAttribute('aria-label', `${days} days`);
       const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const digits = String(days).split('');
       if (still) {
         out.textContent = String(days);
       } else {
-        const start = performance.now() + 900;
-        const length = 1800;
-        const step = (now: number) => {
-          const t = Math.min(Math.max((now - start) / length, 0), 1);
-          out.textContent = String(Math.round(days * (1 - Math.pow(1 - t, 4))));
-          if (t < 1) requestAnimationFrame(step);
-        };
-        requestAnimationFrame(step);
+        // Build one reel per digit. Digits on the right turn more times, like an odometer.
+        out.textContent = '';
+        digits.forEach((ch, i) => {
+          const turns = digits.length - 1 - i;
+          const reel = document.createElement('span');
+          reel.className = 'reel';
+          reel.setAttribute('aria-hidden', 'true');
+          const strip = document.createElement('span');
+          const stops = turns * 10 + Number(ch);
+          for (let n = 0; n <= stops; n++) {
+            const cell = document.createElement('i');
+            cell.textContent = String(n % 10);
+            strip.appendChild(cell);
+          }
+          strip.style.setProperty('--t', `${1.6 + turns * 0.35}s`);
+          strip.style.setProperty('--d', `${0.9 + i * 0.08}s`);
+          reel.appendChild(strip);
+          out.appendChild(reel);
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            strip.style.transform = `translateY(-${(stops / (stops + 1)) * 100}%)`;
+          }));
+        });
       }
     }
   }
