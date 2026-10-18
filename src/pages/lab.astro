@@ -1,0 +1,340 @@
+---
+// Motion lab: a test page to compare versions of the hover line on the
+// "The details" rows. It is not in the menu and search engines do not index it.
+import Layout from '../layouts/Layout.astro';
+
+// A small seeded random generator, so each build draws the same shapes.
+function rng(seed: number) {
+  return () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+}
+
+const W = 1000; // drawing width (the SVG stretches to the row)
+const H = 16; // drawing height
+
+// Contour lines: three soft waves, like lines on a topographic map.
+function contour(seed: number, base: number) {
+  const r = rng(seed);
+  const p1 = r() * 6, p2 = r() * 6, p3 = r() * 6;
+  let d = '';
+  for (let x = 0; x <= W; x += 10) {
+    const y = base + Math.sin(x / 70 + p1) * 1.4 + Math.sin(x / 23 + p2) * 0.6 + Math.sin(x / 160 + p3) * 1.2;
+    d += `${x === 0 ? 'M' : 'L'}${x} ${y.toFixed(2)}`;
+  }
+  return d;
+}
+
+// Ridgeline: a mountain profile, like the skyline of the foothills.
+function ridge(seed: number) {
+  const r = rng(seed);
+  let y = 12, d = `M0 ${H}L0 ${y}`;
+  for (let x = 8; x <= W; x += 8) {
+    const peak = Math.sin(x / 130) * 4.5 + Math.sin(x / 41) * 2.2;
+    y = Math.min(H - 1, Math.max(1, 9.5 - peak + (r() - 0.5) * 2.4));
+    d += `L${x} ${y.toFixed(2)}`;
+  }
+  return d + `L${W} ${H}`;
+}
+
+// Meadow: blades of grass with different heights, in small clumps.
+function meadow(seed: number) {
+  const r = rng(seed);
+  const blades: { x: number; h: number; i: number }[] = [];
+  let i = 0;
+  for (let x = 4; x < W; x += 7 + r() * 5) {
+    const clump = Math.sin(x / 90) * 0.5 + 0.5;
+    blades.push({ x: Math.round(x), h: Math.round(3 + clump * 8 + r() * 4), i: i++ });
+  }
+  return blades;
+}
+
+// Ripple and ruler: even ticks.
+const ticks = (step: number) => Array.from({ length: Math.floor(W / step) + 1 }, (_, i) => i * step);
+
+const rows = [
+  { title: 'Our Story', text: 'How it all started.' },
+  { title: 'Schedule', text: 'Times and places for the weekend.' },
+  { title: 'Travel', text: 'Airports, hotels, and directions.' },
+  { title: 'FAQ', text: 'Answers to common questions.' },
+];
+
+const variants = [
+  { key: 'ruler', name: 'Ruler', note: 'The current version. Fine ticks draw from left to right, like the scale on an instrument.' },
+  { key: 'water', name: 'Water level', note: 'A graduated cylinder. A pale moss level rises in the row, with a scale on the left edge.' },
+  { key: 'contour', name: 'Contour lines', note: 'Three lines like a topographic map draw one after the other.' },
+  { key: 'ridge', name: 'Ridgeline', note: 'A mountain profile draws along the line, like the foothills at the venue.' },
+  { key: 'meadow', name: 'Meadow', note: 'Blades of grass grow up from the line, from left to right.' },
+  { key: 'ripple', name: 'Ripple', note: 'Abstract. The ticks rise around your pointer and follow it, like a wave on a level.' },
+];
+---
+
+<Layout title="Motion lab" noindex>
+  <header class="page-title container">
+    <p class="eyebrow">Motion lab</p>
+    <h1>Hover line versions</h1>
+    <p>Put your pointer on a row, or tap a row, to try each version. This page is for testing only.</p>
+  </header>
+
+  <div class="wide">
+    {
+      variants.map((v, n) => (
+        <section class={`variant v-${v.key}`} data-variant={v.key}>
+          <div class="variant-head">
+            <p class="label">{String.fromCharCode(65 + n)}</p>
+            <h2>{v.name}</h2>
+            <p class="muted note">{v.note}</p>
+            <button class="play label" type="button">Play</button>
+          </div>
+          {rows.map((row, i) => (
+            <a class="row" href="#" style={`--row: ${i}`}>
+              <span class="num label">{String(i + 1).padStart(2, '0')}</span>
+              <span class="title">{row.title}</span>
+              <span class="text muted">{row.text}</span>
+              <span class="go" aria-hidden="true">&rarr;</span>
+              <svg class="mark" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+                {v.key === 'ruler' && (
+                  <g class="ticks">
+                    <line x1="0" x2={W} y1={H - 0.5} y2={H - 0.5} />
+                    {ticks(10).map((x) => (
+                      <line x1={x} x2={x} y1={x % 50 === 0 ? H - 8 : H - 4} y2={H} />
+                    ))}
+                  </g>
+                )}
+                {v.key === 'contour' && (
+                  <g>
+                    {[H - 1.5, H - 6, H - 10.5].map((base, k) => (
+                      <path d={contour(11 + i * 7 + k, base)} pathLength="1" style={`--k: ${k}`} />
+                    ))}
+                  </g>
+                )}
+                {v.key === 'ridge' && <path class="ridge" d={ridge(5 + i * 13)} pathLength="1" />}
+                {v.key === 'meadow' && (
+                  <g>
+                    {meadow(3 + i * 17).map((b) => (
+                      <line class="blade" x1={b.x} x2={b.x} y1={H - b.h} y2={H} style={`--i: ${b.i}`} />
+                    ))}
+                  </g>
+                )}
+                {v.key === 'ripple' && (
+                  <g>
+                    {ticks(12).map((x) => (
+                      <line class="tick" x1={x} x2={x} y1="0" y2={H} data-x={x} />
+                    ))}
+                  </g>
+                )}
+              </svg>
+              {v.key === 'water' && (
+                <span class="level" aria-hidden="true">
+                  <span class="scale" />
+                </span>
+              )}
+            </a>
+          ))}
+        </section>
+      ))
+    }
+  </div>
+</Layout>
+
+<style>
+  .variant { margin: 0 0 clamp(72px, 10vw, 128px); }
+  .variant-head {
+    display: grid;
+    gap: 6px 32px;
+    border-top: 1px solid var(--text);
+    padding-top: 18px;
+    margin-bottom: 8px;
+  }
+  .variant-head h2 { margin: 0; }
+  .variant-head .note { margin: 0; max-width: 40ch; }
+  .play {
+    justify-self: start;
+    background: none;
+    border: 1px solid var(--text);
+    color: var(--text);
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background-color 0.3s var(--machined), color 0.3s var(--machined);
+  }
+  .play:hover { background: var(--text); color: var(--bg); }
+  @media (min-width: 900px) {
+    .variant-head { grid-template-columns: 2fr 4fr 5fr auto; align-items: baseline; }
+  }
+
+  /* Rows: the same layout as "The details" on the home page. */
+  .row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    grid-template-areas: 'num title go' 'num text go';
+    align-items: baseline;
+    column-gap: 16px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+    color: var(--text);
+    position: relative;
+    isolation: isolate;
+  }
+  .row:hover { color: var(--text); }
+  .num { grid-area: num; transition: color 0.4s var(--machined); }
+  .title {
+    grid-area: title;
+    font-family: var(--display);
+    font-size: clamp(1.8rem, 4.8vw, 2.8rem);
+    line-height: 1.1;
+  }
+  .text { grid-area: text; font-size: 1rem; }
+  .go { grid-area: go; align-self: center; font-size: 1.3rem; }
+  @media (min-width: 720px) {
+    .row { grid-template-columns: 2fr 6fr 4fr auto; grid-template-areas: 'num title text go'; }
+  }
+  .row:is(:hover, :focus-visible, .on) .num { color: var(--accent); }
+  .row:is(:hover, :focus-visible, .on) > .go { animation: cycle 0.5s var(--machined); }
+
+  /* The drawing sits on the bottom line of the row, under the text. */
+  .mark {
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 100%;
+    height: 16px;
+    overflow: visible;
+    pointer-events: none;
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1;
+  }
+  /* Keep vertical lines 1px wide at any row width. Paths keep normal scaling,
+     because the dash animation needs it. */
+  .mark line { vector-effect: non-scaling-stroke; }
+
+  /* A. Ruler */
+  .v-ruler .ticks { clip-path: inset(0 100% 0 0); transition: clip-path 0.45s var(--machined); }
+  .v-ruler .row:is(:hover, :focus-visible, .on) .ticks { clip-path: inset(0 0 0 0); }
+
+  /* B. Water level: a flat tint rises from the bottom, with a scale on the left. */
+  .level {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--accent) 9%, transparent);
+    border-top: 1px solid var(--accent);
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform 0.6s var(--glide);
+  }
+  .scale {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+    background:
+      repeating-linear-gradient(to top, var(--accent) 0 1px, transparent 1px 8px) left / 6px 100% no-repeat,
+      repeating-linear-gradient(to top, var(--accent) 0 1px, transparent 1px 32px) left / 10px 100% no-repeat;
+    opacity: 0;
+    transition: opacity 0.4s var(--ease) 0.2s;
+  }
+  .v-water .row:is(:hover, :focus-visible, .on) .level { transform: scaleY(1); }
+  .v-water .row:is(:hover, :focus-visible, .on) .scale { opacity: 1; }
+  .v-water .mark { display: none; }
+
+  /* C. Contour lines */
+  .v-contour path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    opacity: calc(1 - var(--k) * 0.25);
+    transition: stroke-dashoffset 0.7s var(--glide);
+    transition-delay: calc(var(--k) * 0.09s);
+  }
+  .v-contour .row:is(:hover, :focus-visible, .on) path { stroke-dashoffset: 0; }
+
+  /* D. Ridgeline */
+  .v-ridge .ridge {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    fill: color-mix(in srgb, var(--accent) 0%, transparent);
+    transition: stroke-dashoffset 0.8s var(--machined), fill 0.5s var(--ease);
+  }
+  .v-ridge .row:is(:hover, :focus-visible, .on) .ridge {
+    stroke-dashoffset: 0;
+    fill: color-mix(in srgb, var(--accent) 14%, transparent);
+    transition-delay: 0s, 0.5s;
+  }
+
+  /* E. Meadow: each blade grows; blades on the left start first. */
+  .v-meadow .blade {
+    transform-box: fill-box;
+    transform-origin: bottom;
+    transform: scaleY(0);
+    transition: transform 0.45s var(--glide);
+    transition-delay: calc(var(--i) * 3ms);
+  }
+  .v-meadow .row:is(:hover, :focus-visible, .on) .blade { transform: scaleY(1); }
+
+  /* F. Ripple: the script sets the height of each tick. */
+  .v-ripple .tick {
+    transform-box: fill-box;
+    transform-origin: bottom;
+    transform: scaleY(0.12);
+    opacity: 0;
+    transition: transform 0.35s var(--glide), opacity 0.3s var(--ease);
+  }
+  .v-ripple .row:is(:hover, :focus-visible, .on) .tick { opacity: 1; }
+</style>
+
+<script>
+  // Rows on this page do not go anywhere. A tap or click plays the effect.
+  document.querySelectorAll<HTMLAnchorElement>('.variant .row').forEach((row) => {
+    row.addEventListener('click', (e) => {
+      e.preventDefault();
+      row.classList.toggle('on');
+    });
+  });
+
+  // "Play" shows the effect on each row, one after the other.
+  document.querySelectorAll<HTMLElement>('.variant').forEach((section) => {
+    const rows = [...section.querySelectorAll<HTMLElement>('.row')];
+    section.querySelector('.play')?.addEventListener('click', () => {
+      rows.forEach((r) => r.classList.remove('on'));
+      rows.forEach((r, i) => {
+        setTimeout(() => r.classList.add('on'), 250 + i * 450);
+        setTimeout(() => r.classList.remove('on'), 1500 + i * 450);
+      });
+    });
+  });
+
+  // Ripple: ticks near the pointer rise the most, like a wave.
+  document.querySelectorAll<HTMLElement>('.v-ripple .row').forEach((row) => {
+    const ticks = [...row.querySelectorAll<SVGLineElement>('.tick')];
+    const shape = (center: number) => {
+      for (const t of ticks) {
+        const d = (Number(t.dataset.x) - center) / 70;
+        const h = 0.12 + 0.88 * Math.exp(-d * d);
+        t.style.transform = `scaleY(${h.toFixed(3)})`;
+      }
+    };
+    let frame = 0;
+    row.addEventListener('pointermove', (e) => {
+      const box = row.getBoundingClientRect();
+      const x = ((e.clientX - box.left) / box.width) * 1000;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => shape(x));
+    });
+    row.addEventListener('pointerleave', () => ticks.forEach((t) => (t.style.transform = '')));
+    // Tap or Play with no pointer: the wave travels across once.
+    new MutationObserver(() => {
+      if (!row.classList.contains('on') || row.matches(':hover')) return;
+      const start = performance.now();
+      const run = (now: number) => {
+        const t = Math.min((now - start) / 900, 1);
+        shape(-100 + t * 1200);
+        if (t < 1 && row.classList.contains('on')) requestAnimationFrame(run);
+      };
+      requestAnimationFrame(run);
+    }).observe(row, { attributes: true, attributeFilter: ['class'] });
+  });
+</script>
