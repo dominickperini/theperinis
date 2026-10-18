@@ -2,6 +2,7 @@
 // Motion lab: a test page to compare versions of the hover line on the
 // "The details" rows. It is not in the menu and search engines do not index it.
 import Layout from '../layouts/Layout.astro';
+import { ridgePath } from '../lib/ridge';
 
 // A small seeded random generator, so each build draws the same shapes.
 function rng(seed: number) {
@@ -26,17 +27,8 @@ function contour(seed: number, base: number) {
   return d;
 }
 
-// Ridgeline: a mountain profile, like the skyline of the foothills.
-function ridge(seed: number) {
-  const r = rng(seed);
-  let y = 12, d = `M0 ${H}L0 ${y}`;
-  for (let x = 8; x <= W; x += 8) {
-    const peak = Math.sin(x / 130) * 4.5 + Math.sin(x / 41) * 2.2;
-    y = Math.min(H - 1, Math.max(1, 9.5 - peak + (r() - 0.5) * 2.4));
-    d += `L${x} ${y.toFixed(2)}`;
-  }
-  return d + `L${W} ${H}`;
-}
+// Ridgeline: shared with the home page.
+const ridge = ridgePath;
 
 // Meadow: blades of grass with different heights, in small clumps.
 function meadow(seed: number) {
