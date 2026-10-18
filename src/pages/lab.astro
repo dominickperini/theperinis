@@ -4,6 +4,8 @@
 import Layout from '../layouts/Layout.astro';
 import Arrow from '../components/Arrow.astro';
 import { ridgePath } from '../lib/ridge';
+import Photo from '../components/Photo.astro';
+import { fieldNotes } from '../data/media';
 
 // A small seeded random generator, so each build draws the same shapes.
 function rng(seed: number) {
@@ -73,8 +75,8 @@ const arrows = [
 <Layout title="Motion lab" noindex>
   <header class="page-title container">
     <p class="eyebrow">Motion lab</p>
-    <h1>Hover line versions</h1>
-    <p>Put your pointer on a row, or tap a row, to try each version. This page is for testing only.</p>
+    <h1>Interaction versions</h1>
+    <p>Put your pointer on an item, or tap it, to try each version. Version 1 in each group is what the site uses now. This page is for testing only.</p>
   </header>
 
   <div class="wide">
@@ -103,6 +105,148 @@ const arrows = [
         }
       </div>
     </section>
+
+    <!-- Menu links -->
+    <section class="lab-group" aria-labelledby="g-nav">
+      <div class="variant-head"><p class="label">Menu</p><h2 id="g-nav">Menu links</h2><p class="muted note">The links in the top menu.</p></div>
+      <div class="demo-grid">
+        {[
+          ['hairline', 'Hairline', 'A thin line grows under the link.'],
+          ['ridge', 'Ridge', 'A small ridgeline draws under the link.'],
+          ['sunrise', 'Sunrise', 'A small moss dot rises under the link, like the sun over a ridge.'],
+          ['marker', 'Marker', 'A short tick drops above the link, like the marker on a gauge.'],
+        ].map(([k, name, note], n) => (
+          <div class="demo-card">
+            <p class="label">{n + 1}. {name}</p>
+            <p class="muted small">{note}</p>
+            <nav class={`fake-nav nav-${k}`}>
+              {['Our Story', 'Schedule', 'Travel'].map((t) => (
+                <a class="demo navlink" href="#">
+                  <span>{t}</span>
+                  {k === 'ridge' && <svg class="nr" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 L0 4.5 L12 3 L22 4 L34 1.5 L46 3.5 L58 2 L70 4 L82 2.5 L100 4.5 L100 6" pathLength="1" /></svg>}
+                </a>
+              ))}
+            </nav>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Buttons -->
+    <section class="lab-group" aria-labelledby="g-btn">
+      <div class="variant-head"><p class="label">Buttons</p><h2 id="g-btn">Buttons</h2><p class="muted note">RSVP, Continue and Send RSVP. All use the Extend arrow.</p></div>
+      <div class="demo-grid">
+        {[
+          ['fill', 'Moss', 'The button turns moss.'],
+          ['horizon', 'Horizon', 'Moss opens from a middle line, up and down, like the photo reveal.'],
+          ['range', 'Range', 'Moss rises from the bottom with a ridgeline edge, like mountains that fill the button.'],
+          ['outline', 'Outline', 'The fill drains away and leaves a fine outline, like an engineering drawing.'],
+        ].map(([k, name, note], n) => (
+          <div class="demo-card">
+            <p class="label">{n + 1}. {name}</p>
+            <p class="muted small">{note}</p>
+            <a class={`button demo btn-${k}`} href="#">
+              {k === 'range' && <svg class="range-svg" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40 L0 14 L10 9 L18 13 L28 5 L38 11 L48 7 L58 12 L68 4 L78 10 L88 7 L100 12 L100 40Z" /></svg>}
+              <span class="btn-label">RSVP</span> <Arrow />
+            </a>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Text links -->
+    <section class="lab-group" aria-labelledby="g-link">
+      <div class="variant-head"><p class="label">Links</p><h2 id="g-link">Text links</h2><p class="muted note">Links inside text, for example on the Travel and FAQ pages.</p></div>
+      <div class="demo-grid">
+        {[
+          ['color', 'Color', 'The link turns moss.'],
+          ['draw', 'Draw', 'A moss underline draws from left to right over the gray one.'],
+          ['contour', 'Contour', 'The underline turns into a soft wave, like a contour line.'],
+          ['level', 'Level', 'A pale moss band rises behind the word, like a water level.'],
+        ].map(([k, name, note], n) => (
+          <div class="demo-card">
+            <p class="label">{n + 1}. {name}</p>
+            <p class="muted small">{note}</p>
+            <p class="link-sample">The nearest airport is <a class={`demo tl-${k}`} href="#">Denver International</a>, about an hour away.</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="lab-group" aria-labelledby="g-faq">
+      <div class="variant-head"><p class="label">FAQ</p><h2 id="g-faq">FAQ questions</h2><p class="muted note">Open and close a question. Versions 2 to 4 also open smoothly, not in one jump.</p></div>
+      <div class="demo-grid">
+        {[
+          ['plus', 'Plus', 'A plus turns into a minus. The answer shows at once.'],
+          ['hinge', 'Hinge', 'A chevron turns down like a hinge, and the answer slides open.'],
+          ['horizon', 'Horizon', 'A line draws across, then the answer opens below it.'],
+          ['ridge', 'Ridge', 'A ridgeline draws under the question, then the answer slides open.'],
+        ].map(([k, name, note], n) => (
+          <div class="demo-card">
+            <p class="label">{n + 1}. {name}</p>
+            <p class="muted small">{note}</p>
+            <details class={`card faq faq-${k}`}>
+              <summary>
+                <span>Is there parking?</span>
+                <span class="faq-icon" aria-hidden="true" />
+                {k === 'ridge' && <svg class="faq-rline" viewBox="0 0 1000 16" preserveAspectRatio="none" aria-hidden="true"><path d={ridge(41 + n)} pathLength="1" /></svg>}
+              </summary>
+              <div class="faq-body"><p>Yes. Free parking is next to the castle. Shuttles will also run from the hotels.</p></div>
+            </details>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Form fields -->
+    <section class="lab-group" aria-labelledby="g-field">
+      <div class="variant-head"><p class="label">Form</p><h2 id="g-field">Form fields</h2><p class="muted note">Click into a field to see its focus state.</p></div>
+      <div class="demo-grid">
+        {[
+          ['outline', 'Outline', 'A dark outline shows around the field.'],
+          ['line', 'Line', 'The field has only a bottom line. A moss line draws across it.'],
+          ['level', 'Level', 'A pale moss level rises inside the field.'],
+          ['ridge', 'Ridge', 'A ridgeline draws along the bottom of the field.'],
+        ].map(([k, name, note], n) => (
+          <div class="demo-card">
+            <p class="label">{n + 1}. {name}</p>
+            <p class="muted small">{note}</p>
+            <label class={`field field-${k}`}>
+              <span class="field-label">Your name</span>
+              <span class="field-box">
+                <input type="text" placeholder="First and last name" />
+                {k === 'ridge' && <svg class="field-rline" viewBox="0 0 1000 16" preserveAspectRatio="none" aria-hidden="true"><path d={ridge(61 + n)} pathLength="1" /></svg>}
+              </span>
+            </label>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Photos -->
+    <section class="lab-group" aria-labelledby="g-photo">
+      <div class="variant-head"><p class="label">Photos</p><h2 id="g-photo">Photo hover</h2><p class="muted note">Now photos do nothing on hover. These are options.</p></div>
+      <div class="demo-grid">
+        {[
+          ['none', 'Still', 'No hover motion.'],
+          ['lens', 'Lens', 'The photo slowly moves closer, like a lens that focuses.'],
+          ['marks', 'Crop marks', 'Fine corner marks draw outside the photo, like a print proof.'],
+          ['note', 'Field note', 'The caption line draws across and the note slides in.'],
+        ].map(([k, name, note], n) => (
+          <div class="demo-card">
+            <p class="label">{n + 1}. {name}</p>
+            <p class="muted small">{note}</p>
+            <a class={`demo photo-demo ph-${k}`} href="#">
+              <Photo media={fieldNotes[n % fieldNotes.length]} index={n + 1} ratio="4 / 5" sizes="(min-width: 900px) 25vw, 90vw" />
+              {k === 'marks' && <span class="marks" aria-hidden="true"><i /><i /><i /><i /></span>}
+            </a>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <div class="variant-head lines-head"><p class="label">Rows</p><h2>Hover line on rows</h2><p class="muted note">You chose D, Ridgeline. It is on the home page now.</p></div>
 
     {
       variants.map((v, n) => (
@@ -253,6 +397,198 @@ const arrows = [
     transition-delay: 0s, 0.5s;
   }
 
+  /* ---------- Groups of small demos ---------- */
+  .lab-group { margin: 0 0 clamp(72px, 10vw, 128px); }
+  .lines-head { margin-bottom: 40px; }
+  .demo-grid { display: grid; gap: 40px 32px; margin-top: 24px; }
+  @media (min-width: 900px) { .demo-grid { grid-template-columns: repeat(4, 1fr); } }
+  .demo-card .small { font-size: 0.95rem; min-height: 5em; margin: 6px 0 12px; }
+
+  /* Menu links */
+  .fake-nav { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+  .navlink {
+    position: relative;
+    padding: 8px 0;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .navlink:hover { color: var(--text); }
+  .nav-hairline .navlink::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: currentColor;
+    transform: scaleX(0); transform-origin: right; transition: transform 0.5s var(--ease);
+  }
+  .nav-hairline .navlink:is(:hover, :focus-visible, .on)::after { transform: scaleX(1); transform-origin: left; }
+  .nr { position: absolute; left: 0; bottom: -1px; width: 100%; height: 6px; overflow: visible; }
+  .nr path {
+    fill: color-mix(in srgb, var(--accent) 0%, transparent); stroke: var(--accent); stroke-width: 1;
+    stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 0.5s var(--machined), fill 0.4s var(--ease);
+  }
+  .nav-ridge .navlink:is(:hover, :focus-visible, .on) .nr path { stroke-dashoffset: 0; fill: color-mix(in srgb, var(--accent) 18%, transparent); transition-delay: 0s, 0.3s; }
+  .nav-sunrise .navlink::after {
+    content: ''; position: absolute; left: 50%; bottom: -4px; width: 5px; height: 5px; margin-left: -2.5px;
+    border-radius: 50%; background: var(--accent); opacity: 0; transform: translateY(6px);
+    transition: transform 0.45s var(--glide), opacity 0.3s var(--ease);
+  }
+  .nav-sunrise .navlink:is(:hover, :focus-visible, .on)::after { opacity: 1; transform: none; }
+  .nav-marker .navlink::before {
+    content: ''; position: absolute; left: 50%; top: -6px; width: 1px; height: 8px; background: var(--accent);
+    transform: scaleY(0); transform-origin: top; transition: transform 0.4s var(--glide);
+  }
+  .nav-marker .navlink:is(:hover, :focus-visible, .on)::before { transform: scaleY(1); }
+
+  /* Buttons. Version 1 is the global .button style. */
+  .btn-label { position: relative; }
+  .btn-horizon:hover, .btn-range:hover, .btn-outline:hover,
+  .btn-horizon.on, .btn-range.on, .btn-outline.on { background: var(--text); border-color: var(--text); }
+  .btn-fill.on { background: var(--accent); border-color: var(--accent); }
+  .btn-horizon::before, .btn-outline::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+  }
+  .btn-horizon::before { background: var(--accent); transform: scaleY(0); transition: transform 0.45s var(--machined); }
+  .btn-horizon:is(:hover, :focus-visible, .on)::before { transform: scaleY(1); }
+  .btn-range { isolation: isolate; }
+  .range-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; fill: var(--accent); transform: translateY(102%); transition: transform 0.55s var(--glide); }
+  .btn-range:is(:hover, :focus-visible, .on) .range-svg { transform: translateY(0); }
+  .btn-outline { transition: color 0.4s var(--machined), background-color 0.4s var(--machined); }
+  .btn-outline::before { background: var(--text); transform-origin: bottom; transition: transform 0.45s var(--machined); }
+  .btn-outline:is(:hover, :focus-visible, .on) { color: var(--text); background: transparent; }
+  .btn-outline:is(:hover, :focus-visible, .on)::before { transform: scaleY(0); }
+
+  /* Text links */
+  .link-sample { font-size: 1.05rem; margin: 0; }
+  .link-sample a { color: var(--text); }
+  .tl-color:is(:hover, .on) { color: var(--accent); }
+  .tl-draw, .tl-contour, .tl-level { text-decoration: none; background-repeat: no-repeat; }
+  .tl-draw {
+    background-image: linear-gradient(var(--accent), var(--accent)), linear-gradient(var(--line), var(--line));
+    background-size: 0% 1px, 100% 1px; background-position: 0 100%, 0 100%;
+    transition: background-size 0.5s var(--machined);
+  }
+  .tl-draw:is(:hover, :focus-visible, .on) { background-size: 100% 1px, 100% 1px; color: var(--text); }
+  .tl-contour {
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 4'%3E%3Cpath d='M0 2 Q5 0 10 2 T20 2' fill='none' stroke='%2355653f' stroke-width='1'/%3E%3C/svg%3E"),
+      linear-gradient(var(--text), var(--text));
+    background-size: 20px 4px, 100% 1px; background-position: 0 calc(100% + 4px), 0 100%;
+    background-repeat: repeat-x, no-repeat;
+    padding-bottom: 3px;
+    transition: background-position 0.4s var(--glide), background-size 0.4s var(--machined);
+  }
+  .tl-contour:is(:hover, :focus-visible, .on) { background-position: -20px 100%, 0 100%; background-size: 20px 4px, 0% 1px; color: var(--text); }
+  .tl-level {
+    background-image: linear-gradient(color-mix(in srgb, var(--accent) 16%, transparent), color-mix(in srgb, var(--accent) 16%, transparent)), linear-gradient(var(--text), var(--text));
+    background-size: 100% 0%, 100% 1px; background-position: 0 100%, 0 100%;
+    transition: background-size 0.4s var(--glide);
+  }
+  .tl-level:is(:hover, :focus-visible, .on) { background-size: 100% 45%, 100% 1px; color: var(--text); }
+
+  /* FAQ. Smooth open where the browser supports it. */
+  .faq { padding: 18px 20px; margin: 0; }
+  .faq summary {
+    list-style: none; cursor: pointer; position: relative;
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    font-weight: 500;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq-body p { margin: 12px 0 0; color: var(--muted); }
+  .faq-icon { position: relative; width: 14px; height: 14px; flex: none; }
+  .faq-plus .faq-icon {
+    background: linear-gradient(currentColor, currentColor) center / 14px 1px no-repeat, linear-gradient(currentColor, currentColor) center / 1px 14px no-repeat;
+    transition: transform 0.5s var(--ease), background-size 0.5s var(--ease);
+  }
+  .faq-plus[open] .faq-icon { transform: rotate(180deg); background-size: 14px 1px, 1px 0; }
+  .faq-hinge .faq-icon::before {
+    content: ''; position: absolute; inset: 2px 3px 5px; border: solid currentColor; border-width: 0 1px 1px 0;
+    transform: rotate(-45deg); transition: transform 0.45s var(--machined);
+  }
+  .faq-hinge[open] .faq-icon::before { transform: rotate(45deg); }
+  .faq-horizon summary::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -10px; height: 1px; background: var(--accent);
+    transform: scaleX(0); transform-origin: left; transition: transform 0.4s var(--machined);
+  }
+  .faq-horizon[open] summary::after { transform: scaleX(1); }
+  .faq-horizon .faq-icon { display: block; background: linear-gradient(currentColor, currentColor) center / 14px 1px no-repeat, linear-gradient(currentColor, currentColor) center / 1px 14px no-repeat; transition: background-size 0.4s var(--ease); }
+  .faq-horizon[open] .faq-icon { background-size: 14px 1px, 1px 0; }
+  .faq-ridge .faq-icon { background: linear-gradient(currentColor, currentColor) center / 14px 1px no-repeat, linear-gradient(currentColor, currentColor) center / 1px 14px no-repeat; transition: background-size 0.4s var(--ease); }
+  .faq-ridge[open] .faq-icon { background-size: 14px 1px, 1px 0; }
+  .faq-ridge { position: relative; }
+  .faq-rline { position: absolute; left: 0; bottom: -12px; width: 100%; height: 10px; overflow: visible; }
+  .faq-ridge svg path {
+    fill: color-mix(in srgb, var(--accent) 0%, transparent); stroke: var(--accent); stroke-width: 1;
+    stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 0.6s var(--machined), fill 0.4s var(--ease);
+  }
+  .faq-ridge[open] svg path { stroke-dashoffset: 0; fill: color-mix(in srgb, var(--accent) 14%, transparent); transition-delay: 0s, 0.4s; }
+  @supports (interpolate-size: allow-keywords) {
+    :is(.faq-hinge, .faq-horizon, .faq-ridge) { interpolate-size: allow-keywords; }
+    :is(.faq-hinge, .faq-horizon, .faq-ridge)::details-content {
+      height: 0; overflow: clip; opacity: 0;
+      transition: height 0.45s var(--glide), opacity 0.35s var(--ease), content-visibility 0.45s allow-discrete;
+    }
+    :is(.faq-hinge, .faq-horizon, .faq-ridge)[open]::details-content { height: auto; opacity: 1; }
+    .faq-horizon[open]::details-content, .faq-ridge[open]::details-content { transition-delay: 0.2s; }
+  }
+
+  /* Form fields */
+  .field { display: grid; gap: 6px; }
+  .field-label { font-weight: 600; font-size: 0.95rem; }
+  .field-box { position: relative; display: block; isolation: isolate; }
+  .field input {
+    width: 100%; font: inherit; font-size: 1rem; padding: 12px 14px; color: var(--text);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 0; outline: none;
+    transition: border-color 0.2s;
+  }
+  .field-outline input:focus { outline: 1px solid var(--text); border-color: var(--text); }
+  .field-line input { background: transparent; border-width: 0 0 1px; padding-left: 0; }
+  .field-line .field-box::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--accent);
+    transform: scaleX(0); transform-origin: left; transition: transform 0.45s var(--machined);
+  }
+  .field-line .field-box:focus-within::after { transform: scaleX(1); }
+  .field-level input { background: transparent; }
+  .field-level .field-box::before {
+    content: ''; position: absolute; inset: 1px; z-index: -1; background: var(--surface);
+  }
+  .field-level .field-box::after {
+    content: ''; position: absolute; inset: 1px; z-index: -1; background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+    border-top: 1px solid var(--accent); transform: scaleY(0); transform-origin: bottom; transition: transform 0.45s var(--glide);
+  }
+  .field-level input:focus { border-color: var(--accent); }
+  .field-level .field-box:focus-within::after { transform: scaleY(1); }
+  .field-rline { position: absolute; left: 0; bottom: 0; width: 100%; height: 12px; overflow: visible; pointer-events: none; }
+  .field-rline path {
+    fill: color-mix(in srgb, var(--accent) 0%, transparent); stroke: var(--accent); stroke-width: 1;
+    stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 0.6s var(--machined), fill 0.4s var(--ease);
+  }
+  .field-ridge .field-box:focus-within path { stroke-dashoffset: 0; fill: color-mix(in srgb, var(--accent) 12%, transparent); transition-delay: 0s, 0.35s; }
+  .field-ridge input:focus { border-color: var(--accent); }
+
+  /* Photos */
+  .photo-demo { display: block; position: relative; text-decoration: none; color: inherit; }
+  .photo-demo :global(.frame > *) { transition: transform 1.4s var(--glide); }
+  .ph-lens:is(:hover, :focus-visible, .on) :global(.frame > *) { transform: scale(1.04); }
+  /* The marks box matches the 4:5 photo frame, not the caption below it. */
+  .marks { position: absolute; inset: 0 0 auto 0; aspect-ratio: 4 / 5; pointer-events: none; }
+  .marks i {
+    position: absolute; width: 14px; height: 14px; border: 0 solid var(--accent);
+    opacity: 0; transition: opacity 0.3s var(--ease), transform 0.45s var(--glide);
+  }
+  .marks i:nth-child(1) { left: -8px; top: -8px; border-width: 1px 0 0 1px; transform: translate(6px, 6px); }
+  .marks i:nth-child(2) { right: -8px; top: -8px; border-width: 1px 1px 0 0; transform: translate(-6px, 6px); }
+  .marks i:nth-child(3) { left: -8px; bottom: -8px; border-width: 0 0 1px 1px; transform: translate(6px, -6px); }
+  .marks i:nth-child(4) { right: -8px; bottom: -8px; border-width: 0 1px 1px 0; transform: translate(-6px, -6px); }
+  .ph-marks:is(:hover, :focus-visible, .on) .marks i { opacity: 1; transform: none; }
+  .ph-note :global(figcaption) { position: relative; padding-top: 8px; }
+  .ph-note :global(figcaption)::before {
+    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--accent);
+    transform: scaleX(0); transform-origin: left; transition: transform 0.5s var(--machined);
+  }
+  .ph-note :global(figcaption > span) { transition: transform 0.5s var(--glide), opacity 0.4s var(--ease); }
+  .ph-note:not(:hover):not(.on):not(:focus-visible) :global(figcaption > span:first-child) { opacity: 0.4; transform: translateY(4px); }
+  .ph-note:is(:hover, :focus-visible, .on) :global(figcaption)::before { transform: scaleX(1); }
+
   /* A. Ruler */
   .v-ruler .ticks { clip-path: inset(0 100% 0 0); transition: clip-path 0.45s var(--machined); }
   .v-ruler .row:is(:hover, :focus-visible, .on) .ticks { clip-path: inset(0 0 0 0); }
@@ -339,7 +675,7 @@ const arrows = [
   });
 
   // Arrow demos: a tap or click plays the motion and does not go anywhere.
-  document.querySelectorAll<HTMLAnchorElement>('.arrows .demo').forEach((el) => {
+  document.querySelectorAll<HTMLAnchorElement>('.arrows .demo, .lab-group .demo').forEach((el) => {
     el.addEventListener('click', (e) => {
       e.preventDefault();
       el.classList.remove('on');
