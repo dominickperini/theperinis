@@ -1,8 +1,9 @@
 /*
   Design: "a field journal in stone".
   Brutalism: an exposed grid, hairlines, numbered sections, very large type
-  next to small monospace labels.
-  Cottagecore: oat paper with grain, a soft serif voice, a pressed sprig.
+  next to small labels.
+  Cottagecore: oat paper, a pressed sprig. No text sits on a texture.
+  Type: a strong serif (Bodoni Moda) for impact, Helvetica for the rest.
   Naturalism: colors from the Colorado foothills (granite, moss, aspen gold),
   and the couple's photos and films do most of the work.
 */
@@ -18,10 +19,11 @@
   --gold: #b58a3c;      /* aspen gold: use one or two times only */
   --accent-dark: #2a2824;
 
-  --display: 'Inter Tight', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
-  --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  /* Two fonts: a strong serif for impact, a clean Helvetica sans for the rest. */
+  --display: 'Bodoni Moda', 'Didot', 'Bodoni 72', Georgia, serif;
+  --serif: var(--display);
+  --sans: 'Helvetica Neue', Helvetica, 'Inter', Arial, sans-serif;
+  --mono: var(--sans);
 
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --radius: 0;
@@ -34,8 +36,6 @@
   /* A pressed sprig: a stem with leaves, drawn in moss. */
   --sprig: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 64' fill='none' stroke='%2355653f' stroke-width='1.1' stroke-linecap='round'%3E%3Cpath d='M20 62C19 46 21 30 20 4'/%3E%3Cpath d='M20 50c-6-1-10-5-11-10 6 0 10 4 11 10Z' fill='%2355653f' fill-opacity='.18'/%3E%3Cpath d='M20 42c6-1 10-5 11-10-6 0-10 4-11 10Z' fill='%2355653f' fill-opacity='.18'/%3E%3Cpath d='M20 32c-5-1-8-5-9-9 5 0 8 4 9 9Z' fill='%2355653f' fill-opacity='.18'/%3E%3Cpath d='M20 24c5-1 8-4 8-8-5 0-8 3-8 8Z' fill='%2355653f' fill-opacity='.18'/%3E%3Cpath d='M20 14c-3-1-5-4-5-7 3 0 5 3 5 7Z' fill='%2355653f' fill-opacity='.18'/%3E%3C/svg%3E");
 
-  /* Paper grain. */
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .16 0 0 0 0 .15 0 0 0 0 .13 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 * { box-sizing: border-box; }
@@ -52,34 +52,24 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
-/* Grain over the full page, like paper. */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  pointer-events: none;
-  background: var(--grain);
-  opacity: 0.22;
-  mix-blend-mode: multiply;
-}
 
 ::selection { background: var(--accent); color: var(--bg); }
 
 h1, h2 {
   font-family: var(--display);
-  font-weight: 300;
+  font-weight: 500;
+  font-optical-sizing: auto;
   line-height: 1.02;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.02em;
   margin: 0 0 0.5em;
 }
 h1 { font-size: clamp(2.8rem, 8vw, 5.5rem); }
 h2 { font-size: clamp(1.9rem, 4.5vw, 3rem); }
 h3 {
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: 1.45rem;
-  line-height: 1.2;
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 1.3rem;
+  line-height: 1.25;
   letter-spacing: -0.01em;
   margin: 0 0 0.4em;
 }
@@ -104,7 +94,7 @@ main { padding: 48px 0 112px; }
 
 .page-title { text-align: center; margin-bottom: 56px; }
 .page-title p { color: var(--muted); margin: 0; }
-.page-title p:not(.eyebrow) { font-family: var(--serif); font-size: 1.15rem; }
+.page-title p:not(.eyebrow) { font-size: 1.1rem; }
 /* A pressed sprig above every page title. */
 .page-title::before {
   content: '';
