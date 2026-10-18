@@ -32,7 +32,7 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
         <span class="line"><span class="rise" style="--i: 2"><em>&amp;</em> {wedding.couple.second}</span></span>
       </h1>
 
-      <div class="hero-side concrete rise" style="--i: 3">
+      <div class="hero-side rise" style="--i: 3">
         <p class="eyebrow">We are getting married</p>
         <dl class="specs">
           <div>
@@ -61,7 +61,6 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
   </section>
 
   <section class="wide notes" aria-labelledby="notes-title">
-    <hr class="oak-rule reveal" />
     <header class="notes-head reveal">
       <p class="label">§ 01</p>
       <h2 id="notes-title">Field notes</h2>
@@ -82,7 +81,6 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
   </section>
 
   <nav class="wide index" aria-label="More about the wedding">
-    <hr class="oak-rule reveal" />
     <p class="label index-label reveal">§ 02 &nbsp; The details</p>
     {
       links.map((link, i) => (
@@ -116,7 +114,7 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
     margin-top: clamp(28px, 5vw, 56px);
   }
   @media (min-width: 960px) {
-    .hero-text { grid-template-columns: 1fr 1fr; align-items: end; gap: 48px; }
+    .hero-text { grid-template-columns: 7fr 5fr; align-items: end; gap: 56px; }
   }
 
   .names {
@@ -143,17 +141,16 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
   @keyframes rise { from { opacity: 0; transform: translateY(22px); } }
   @keyframes rise-line { from { transform: translateY(105%); } }
 
-  .hero-side { padding: clamp(24px, 3vw, 36px); }
   .hero-side .eyebrow { margin: 0 0 14px; color: var(--accent); }
   .specs { display: grid; grid-template-columns: repeat(3, auto); margin: 0 0 28px; border-top: 1px solid var(--text); }
   .specs > div { padding: 14px 16px 14px 0; }
-  .specs > div + div { border-left: 1px solid rgba(42, 40, 36, 0.22); padding-left: 16px; }
+  .specs > div + div { border-left: 1px solid var(--line); padding-left: 16px; }
   .specs dt { margin: 0 0 6px; }
   .specs dd { margin: 0; font-size: 0.98rem; line-height: 1.4; }
   .count { font-family: var(--mono); font-variant-numeric: tabular-nums; }
   @media (max-width: 520px) {
     .specs { grid-template-columns: 1fr 1fr; }
-    .specs > div + div:nth-child(3) { grid-column: 1 / -1; border-left: 0; padding-left: 0; border-top: 1px solid var(--line); }
+    .specs > div:nth-child(3) { grid-column: 1 / -1; border-left: 0; padding-left: 0; border-top: 1px solid var(--line); }
   }
 
   .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; }
@@ -166,6 +163,7 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
   .notes-head {
     display: grid;
     gap: 8px 32px;
+    border-top: 1px solid var(--text);
     padding-top: 18px;
     margin-bottom: clamp(32px, 5vw, 64px);
   }
@@ -191,7 +189,7 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
   .notes-grid > :global(.n5) :global(.frame) { aspect-ratio: 4 / 3; }
 
   /* ---------- Index links ---------- */
-  .index-label { padding-top: 18px; margin: 0 0 8px; }
+  .index-label { border-top: 1px solid var(--text); padding-top: 18px; margin: 0 0 8px; }
   .index-link {
     display: grid;
     grid-template-columns: 44px 1fr auto;
