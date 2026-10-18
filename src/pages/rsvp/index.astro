@@ -130,11 +130,16 @@ Astro.response.headers.set('Cache-Control', 'no-store');
     padding: 12px 14px;
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    background: var(--bg);
+    /* Three layers: a cover in the field color, the ridgeline, the field color. */
+    background:
+      linear-gradient(var(--bg), var(--bg)) 100% 100% / 100% 12px no-repeat,
+      var(--ridge-line) 0 100% / 100% 12px no-repeat,
+      var(--bg);
     width: 100%;
-    transition: border-color 0.2s;
+    transition: border-color 0.3s var(--ease), background-size 0.7s var(--machined);
   }
-  input:focus, textarea:focus { outline: 1px solid var(--text); outline-offset: 0; border-color: var(--text); }
+  /* Focus: a ridgeline draws along the bottom of the field, from left to right. */
+  input:focus, textarea:focus { outline: none; border-color: var(--accent); background-size: 0% 12px, 100% 12px, auto; }
   fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
   legend { font-weight: 600; font-size: 0.95rem; margin-bottom: 6px; }
   .choice { display: flex; align-items: center; gap: 10px; font-weight: 400; font-size: 1rem; }
@@ -144,6 +149,18 @@ Astro.response.headers.set('Cache-Control', 'no-store');
   .small { font-size: 0.9rem; margin: 0; }
   .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
   .party { margin: 0; font-size: 1.05rem; }
+  /* A small woven houndstooth stamp on the RSVP card. */
+  form.card { position: relative; }
+  form.card::after {
+    content: '';
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 32px;
+    height: 32px;
+    background: var(--houndstooth) 0 0 / 8px 8px;
+    opacity: 0.7;
+  }
   .error { border-color: #b4553f; color: #8a3a28; }
   button { justify-self: start; }
 </style>

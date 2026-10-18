@@ -1,0 +1,15 @@
+---
+// A drawn arrow (shaft + head) with a hover motion.
+// The motion plays when the parent link or button has hover or keyboard focus.
+// Versions (see /lab): extend (default), compass, trail, draw.
+interface Props {
+  motion?: 'extend' | 'compass' | 'trail' | 'draw';
+  class?: string;
+}
+const { motion = 'extend', class: className } = Astro.props;
+---
+
+<svg class:list={['arw', `arw-${motion}`, className]} viewBox="0 0 32 12" aria-hidden="true" focusable="false">
+  <line class="shaft" x1="1" y1="6" x2="30" y2="6" pathLength="1" />
+  <polyline class="head" points="24.5,1 30.5,6 24.5,11" pathLength="1" />
+</svg>
