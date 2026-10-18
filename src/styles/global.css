@@ -3,7 +3,8 @@
   Brutalism: an exposed grid, hairlines, numbered sections, very large type
   next to small labels.
   Cottagecore: oat paper, a pressed sprig. No text sits on a texture.
-  Type: a strong serif (Bodoni Moda) for impact, Helvetica for the rest.
+  Type: the serif of Marathon (IvyPresto Headline, or the free Instrument Serif)
+  for impact, Helvetica for the rest.
   Naturalism: colors from the Colorado foothills (granite, moss, aspen gold),
   and the couple's photos and films do most of the work.
 */
@@ -20,7 +21,7 @@
   --accent-dark: #2a2824;
 
   /* Two fonts: a strong serif for impact, a clean Helvetica sans for the rest. */
-  --display: 'Bodoni Moda', 'Didot', 'Bodoni 72', Georgia, serif;
+  --display: 'ivypresto-headline', 'Instrument Serif', Georgia, serif;
   --serif: var(--display);
   --sans: 'Helvetica Neue', Helvetica, 'Inter', Arial, sans-serif;
   --mono: var(--sans);
@@ -61,10 +62,9 @@ body {
 
 h1, h2 {
   font-family: var(--display);
-  font-weight: 500;
-  font-optical-sizing: auto;
+  font-weight: 400;
   line-height: 1.02;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   margin: 0 0 0.5em;
 }
 h1 { font-size: clamp(2.8rem, 8vw, 5.5rem); }
@@ -148,12 +148,12 @@ main { padding: 48px 0 112px; }
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  transition: background-color 0.5s var(--machined), border-color 0.5s var(--machined);
+  transition: background-color 0.3s var(--machined), border-color 0.3s var(--machined);
 }
 /* On hover the button turns moss and the arrow makes one full cycle:
    it leaves on the right and comes back from the left. */
 .button:hover { color: var(--bg); background: var(--accent); border-color: var(--accent); }
-.button:hover .arrow, a:hover > .go { animation: cycle 0.7s var(--machined); }
+.button:hover .arrow, a:hover > .go { animation: cycle 0.5s var(--machined); }
 @keyframes cycle {
   0% { transform: none; opacity: 1; }
   45% { transform: translateX(110%); opacity: 0; }
@@ -182,40 +182,49 @@ main { padding: 48px 0 112px; }
 
 /* Pages: the old page goes quickly, the new page settles into place. */
 @view-transition { navigation: auto; }
-::view-transition-old(root) { animation: 0.22s var(--machined) both vt-out; }
-::view-transition-new(root) { animation: 0.6s var(--glide) 0.08s both vt-in; }
+::view-transition-old(root) { animation: 0.18s var(--machined) both vt-out; }
+::view-transition-new(root) { animation: 0.4s var(--glide) 0.05s both vt-in; }
 @keyframes vt-out { to { opacity: 0; } }
-@keyframes vt-in { from { opacity: 0; transform: translateY(14px); } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(10px); } }
 
 /* Scroll reveal. The layout script adds .js to <html>, so without
    JavaScript all content shows at once.
-   - Text opens like a shutter: a clean edge moves up and shows it.
-   - Photos open from the horizon: a thin line at the middle opens up and down.
+   Speed rule: animate only transform and opacity. The browser moves those
+   on the graphics card, so they stay smooth on phones. Entries use --glide:
+   they start fast, so the page reacts at once, and then settle.
+   - Text rises a short distance and fades in.
+   - Photos open from the horizon: two panels in the page color move apart,
+     up and down from the middle line.
    - A section rule draws from left to right first, then its text follows. */
 .js .reveal {
-  clip-path: inset(0 0 100% 0);
-  transform: translateY(0.5em);
-  transition: clip-path 0.9s var(--machined), transform 0.9s var(--machined);
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.6s var(--glide), transform 0.7s var(--glide);
   transition-delay: var(--delay, 0s);
 }
-.js .reveal.in { clip-path: inset(0 0 -1px 0); transform: none; }
+.js .reveal.in { opacity: 1; transform: none; }
 
-.js .photo.reveal { clip-path: none; transform: none; }
-.js .photo.reveal .frame {
-  clip-path: inset(50% 50% 50% 50%);
-  transition: clip-path 1.5s var(--machined);
+.js .photo.reveal { opacity: 1; transform: none; }
+.js .photo.reveal .frame::before,
+.js .photo.reveal .frame::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50.5%;
+  z-index: 1;
+  background: var(--bg);
+  transition: transform 0.9s var(--machined);
   transition-delay: var(--delay, 0s);
 }
-.js .photo.reveal .frame > * { transform: scale(1.12); transition: transform 2.2s var(--glide); transition-delay: var(--delay, 0s); }
-.js .photo.reveal figcaption { opacity: 0; transition: opacity 0.8s var(--ease); transition-delay: calc(var(--delay, 0s) + 0.9s); }
-.js .photo.reveal.in .frame { animation: horizon 1.5s var(--machined) both; animation-delay: var(--delay, 0s); clip-path: inset(0); }
+.js .photo.reveal .frame::before { top: 0; }
+.js .photo.reveal .frame::after { bottom: 0; }
+.js .photo.reveal.in .frame::before { transform: translateY(-101%); }
+.js .photo.reveal.in .frame::after { transform: translateY(101%); }
+.js .photo.reveal .frame > * { transform: scale(1.06); transition: transform 1.2s var(--glide); transition-delay: var(--delay, 0s); }
 .js .photo.reveal.in .frame > * { transform: none; }
+.js .photo.reveal figcaption { opacity: 0; transition: opacity 0.5s var(--ease); transition-delay: calc(var(--delay, 0s) + 0.45s); }
 .js .photo.reveal.in figcaption { opacity: 1; }
-@keyframes horizon {
-  0% { clip-path: inset(50% 50% 50% 50%); }
-  35% { clip-path: inset(calc(50% - 1px) 0 calc(50% - 1px) 0); }
-  100% { clip-path: inset(0); }
-}
 
 .ruled { position: relative; border-top: 0 !important; }
 .ruled::before {
@@ -228,9 +237,9 @@ main { padding: 48px 0 112px; }
   background: var(--text);
   transform-origin: left;
 }
-.js .ruled.reveal { clip-path: none; transform: none; }
-.js .ruled.reveal::before { transform: scaleX(0); transition: transform 1.2s var(--machined) var(--delay, 0s); }
-.js .ruled.reveal > * { opacity: 0; transform: translateY(8px); transition: opacity 0.8s var(--ease), transform 0.8s var(--glide); transition-delay: calc(var(--delay, 0s) + 0.45s); }
+.js .ruled.reveal { opacity: 1; transform: none; }
+.js .ruled.reveal::before { transform: scaleX(0); transition: transform 0.8s var(--machined) var(--delay, 0s); }
+.js .ruled.reveal > * { opacity: 0; transform: translateY(8px); transition: opacity 0.5s var(--glide), transform 0.6s var(--glide); transition-delay: calc(var(--delay, 0s) + 0.25s); }
 .js .ruled.reveal.in::before { transform: none; }
 .js .ruled.reveal.in > * { opacity: 1; transform: none; }
 
@@ -262,9 +271,10 @@ main { padding: 48px 0 112px; }
     transition-duration: 0.01ms !important;
     transition-delay: 0s !important;
   }
-  .js .reveal, .js .reveal .frame, .js .reveal .frame > *, .js .reveal figcaption, .js .ruled.reveal > * {
-    clip-path: none !important; transform: none !important; opacity: 1 !important; animation: none !important;
+  .js .reveal, .js .reveal .frame > *, .js .reveal figcaption, .js .ruled.reveal > * {
+    transform: none !important; opacity: 1 !important; animation: none !important;
   }
+  .js .photo.reveal .frame::before, .js .photo.reveal .frame::after { display: none; }
   .js .ruled.reveal::before { transform: none; }
   .site-header::after { display: none; }
   @view-transition { navigation: none; }

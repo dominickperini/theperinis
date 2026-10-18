@@ -11,6 +11,9 @@ interface Props {
 const { title, noindex = false, description = `The wedding of ${wedding.couple.first} and ${wedding.couple.second}.` } = Astro.props;
 const names = `${wedding.couple.first} & ${wedding.couple.second}`;
 const fullTitle = title ? `${title} | ${names}` : names;
+// Optional: an Adobe Fonts web project with IvyPresto Headline (the Marathon serif).
+// Set PUBLIC_ADOBE_FONTS_KIT in Vercel to its kit ID. Without it, Instrument Serif is used.
+const adobeKit = import.meta.env.PUBLIC_ADOBE_FONTS_KIT;
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 ---
 
@@ -28,9 +31,10 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..800&family=Inter:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+    {adobeKit && <link rel="stylesheet" href={`https://use.typekit.net/${adobeKit}.css`} />}
     <script is:inline>document.documentElement.classList.add('js');</script>
   </head>
   <body>
@@ -70,9 +74,8 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     position: sticky;
     top: 0;
     z-index: 10;
-    background: color-mix(in srgb, var(--bg) 82%, transparent);
-    -webkit-backdrop-filter: saturate(1.4) blur(14px);
-    backdrop-filter: saturate(1.4) blur(14px);
+    /* A solid header. A blur filter here repaints on every scroll frame and makes scrolling slow. */
+    background: color-mix(in srgb, var(--bg) 96%, transparent);
     border-bottom: 1px solid transparent;
     transition: border-color 0.4s var(--ease);
     view-transition-name: site-header;
@@ -88,7 +91,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   }
   .monogram {
     font-family: var(--display);
-    font-weight: 500;
+    font-weight: 400;
     font-size: 1.05rem;
     letter-spacing: 0.06em;
     text-decoration: none;
@@ -180,7 +183,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   }
   .footer-names {
     font-family: var(--display);
-    font-weight: 500;
+    font-weight: 400;
     font-size: 1.9rem;
     letter-spacing: -0.02em;
     color: var(--text);
@@ -224,12 +227,12 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
           seen.unobserve(entry.target);
         }
       },
-      { rootMargin: '0px 0px -8% 0px' },
+      { rootMargin: '0px 0px -4% 0px' },
     );
     items.forEach((el) => {
       if (!el.style.getPropertyValue('--delay')) {
         const index = Array.prototype.indexOf.call(el.parentElement?.children ?? [], el);
-        el.style.setProperty('--delay', `${Math.min(Math.max(index, 0), 5) * 0.07}s`);
+        el.style.setProperty('--delay', `${Math.min(Math.max(index, 0), 4) * 0.05}s`);
       }
       el.classList.add('reveal');
       seen.observe(el);
