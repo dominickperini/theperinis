@@ -1,730 +1,299 @@
 ---
-// Motion lab: a test page to compare versions of the hover line on the
-// "The details" rows. It is not in the menu and search engines do not index it.
+// Motion lab: a test page to try ideas before they go on the site.
+// It is not in the menu and search engines do not index it.
 import Layout from '../layouts/Layout.astro';
-import Arrow from '../components/Arrow.astro';
-import { ridgePath } from '../lib/ridge';
-import Photo from '../components/Photo.astro';
-import { fieldNotes } from '../data/media';
 
-// A small seeded random generator, so each build draws the same shapes.
-function rng(seed: number) {
-  return () => {
-    seed = (seed * 16807) % 2147483647;
-    return (seed - 1) / 2147483646;
-  };
-}
+// Houndstooth tile (8 x 8) in five pieces, the same shape as --houndstooth.
+const pieces = ['M0 0H4V4H0Z', 'M6 0H8L4 4V2Z', 'M8 2V4H6Z', 'M4 4V6L2 8H0Z', 'M0 4H2L0 6Z'];
+const grid = (cols: number, rows: number) =>
+  Array.from({ length: cols * rows }, (_, i) => ({ x: (i % cols) * 8, y: Math.floor(i / cols) * 8, c: i % cols, r: Math.floor(i / cols) }));
 
-const W = 1000; // drawing width (the SVG stretches to the row)
-const H = 16; // drawing height
-
-// Contour lines: three soft waves, like lines on a topographic map.
-function contour(seed: number, base: number) {
-  const r = rng(seed);
-  const p1 = r() * 6, p2 = r() * 6, p3 = r() * 6;
-  let d = '';
-  for (let x = 0; x <= W; x += 10) {
-    const y = base + Math.sin(x / 70 + p1) * 1.4 + Math.sin(x / 23 + p2) * 0.6 + Math.sin(x / 160 + p3) * 1.2;
-    d += `${x === 0 ? 'M' : 'L'}${x} ${y.toFixed(2)}`;
-  }
-  return d;
-}
-
-// Ridgeline: shared with the home page.
-const ridge = ridgePath;
-
-// Meadow: blades of grass with different heights, in small clumps.
-function meadow(seed: number) {
-  const r = rng(seed);
-  const blades: { x: number; h: number; i: number }[] = [];
-  let i = 0;
-  for (let x = 4; x < W; x += 7 + r() * 5) {
-    const clump = Math.sin(x / 90) * 0.5 + 0.5;
-    blades.push({ x: Math.round(x), h: Math.round(3 + clump * 8 + r() * 4), i: i++ });
-  }
-  return blades;
-}
-
-// Ripple and ruler: even ticks.
-const ticks = (step: number) => Array.from({ length: Math.floor(W / step) + 1 }, (_, i) => i * step);
-
-const rows = [
-  { title: 'Our Story', text: 'How it all started.' },
-  { title: 'Schedule', text: 'Times and places for the weekend.' },
-  { title: 'Travel', text: 'Airports, hotels, and directions.' },
-  { title: 'FAQ', text: 'Answers to common questions.' },
+const menus = [
+  { key: 'hairline', name: 'Hairline', note: 'What the site uses now. A thin line grows under the link.' },
+  { key: 'glide', name: 'Glide', note: 'One line glides from link to link and settles under the one you point at, like a car that pulls in. It goes back to the current page.' },
+  { key: 'contour', name: 'Contour', note: 'The same motion as the text links: the line rises into a soft wave.' },
+  { key: 'summit', name: 'Summit', note: 'A small peak rises under the link, like a summit marker on a map.' },
+  { key: 'brackets', name: 'Brackets', note: 'Fine corner marks close in around the link, like a viewfinder that frames it.' },
 ];
-
-const variants = [
-  { key: 'ruler', name: 'Ruler', note: 'The current version. Fine ticks draw from left to right, like the scale on an instrument.' },
-  { key: 'water', name: 'Water level', note: 'A graduated cylinder. A pale moss level rises in the row, with a scale on the left edge.' },
-  { key: 'contour', name: 'Contour lines', note: 'Three lines like a topographic map draw one after the other.' },
-  { key: 'ridge', name: 'Ridgeline', note: 'A mountain profile draws along the line, like the foothills at the venue.' },
-  { key: 'meadow', name: 'Meadow', note: 'Blades of grass grow up from the line, from left to right.' },
-  { key: 'ripple', name: 'Ripple', note: 'Abstract. The ticks rise around your pointer and follow it, like a wave on a level.' },
-];
-
-const arrows = [
-  { key: 'extend', name: 'Extend', note: 'The line of the arrow reaches out to the left. The head stays still. Precise, like an instrument needle.' },
-  { key: 'compass', name: 'Compass', note: 'At rest the arrow points up. On hover it turns to point ahead, like a compass needle that settles.' },
-  { key: 'trail', name: 'Trail', note: 'The line is a dashed route, like a trail on a map. The dashes move toward the head.' },
-  { key: 'draw', name: 'Draw', note: 'The arrow draws itself again with a pen line: first the line, then the head.' },
-] as const;
+const links = ['Our Story', 'Schedule', 'Travel', 'FAQ'];
 ---
 
 <Layout title="Motion lab" noindex>
   <header class="page-title container">
     <p class="eyebrow">Motion lab</p>
-    <h1>Interaction versions</h1>
-    <p>Put your pointer on an item, or tap it, to try each version. Version 1 in each group is what the site uses now. This page is for testing only.</p>
+    <h1>Open ideas</h1>
+    <p>Put your pointer on an item, or tap it. This page is for testing only.</p>
   </header>
 
   <div class="wide">
-    <section class="arrows" aria-labelledby="arrows-title">
-      <div class="variant-head">
-        <p class="label">Arrows</p>
-        <h2 id="arrows-title">Arrow versions</h2>
-        <p class="muted note">Put your pointer on a row or a button, or tap it. Each row also has the ridgeline.</p>
+    <section class="group" aria-labelledby="g-menu">
+      <div class="head">
+        <p class="label">Menu</p>
+        <h2 id="g-menu">Menu links</h2>
+        <p class="muted note">The second link in each menu is the current page.</p>
       </div>
-      <div class="arrow-grid">
+      <div class="menus">
         {
-          arrows.map((a, n) => (
-            <div class="arrow-card">
-              <p class="label">{n + 1}. {a.name}</p>
-              <p class="muted small">{a.note}</p>
-              <a class="row demo v-ridge-row" href="#">
-                <span class="title">Schedule</span>
-                <span class="go"><Arrow motion={a.key} /></span>
-                <svg class="mark" viewBox="0 0 1000 16" preserveAspectRatio="none" aria-hidden="true">
-                  <path class="ridge" d={ridge(5 + n * 13)} pathLength="1" />
-                </svg>
-              </a>
-              <a class="button demo" href="#">RSVP <Arrow motion={a.key} /></a>
+          menus.map((m, n) => (
+            <div class="menu-demo">
+              <div class="menu-text">
+                <p class="label">{n + 1}. {m.name}</p>
+                <p class="muted small">{m.note}</p>
+              </div>
+              <nav class={`fake-nav nav-${m.key}`} aria-label={`${m.name} demo`}>
+                {links.map((t, i) => (
+                  <a class="demo navlink" href="#" aria-current={i === 1 ? 'page' : undefined}>
+                    {t}
+                    {m.key === 'summit' && (
+                      <svg class="peak" viewBox="0 0 10 5" aria-hidden="true"><path d="M0 5 L5 0.5 L10 5" /></svg>
+                    )}
+                    {m.key === 'brackets' && <span class="brk" aria-hidden="true"><i /><i /><i /><i /></span>}
+                  </a>
+                ))}
+                {m.key === 'glide' && <span class="glider" aria-hidden="true" />}
+              </nav>
             </div>
           ))
         }
       </div>
     </section>
 
-    <!-- Menu links -->
-    <section class="lab-group" aria-labelledby="g-nav">
-      <div class="variant-head"><p class="label">Menu</p><h2 id="g-nav">Menu links</h2><p class="muted note">The links in the top menu.</p></div>
-      <div class="demo-grid">
-        {[
-          ['hairline', 'Hairline', 'A thin line grows under the link.'],
-          ['ridge', 'Ridge', 'A small ridgeline draws under the link.'],
-          ['sunrise', 'Sunrise', 'A small moss dot rises under the link, like the sun over a ridge.'],
-          ['marker', 'Marker', 'A short tick drops above the link, like the marker on a gauge.'],
-        ].map(([k, name, note], n) => (
-          <div class="demo-card">
-            <p class="label">{n + 1}. {name}</p>
-            <p class="muted small">{note}</p>
-            <nav class={`fake-nav nav-${k}`}>
-              {['Our Story', 'Schedule', 'Travel'].map((t) => (
-                <a class="demo navlink" href="#">
-                  <span>{t}</span>
-                  {k === 'ridge' && <svg class="nr" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 L0 4.5 L12 3 L22 4 L34 1.5 L46 3.5 L58 2 L70 4 L82 2.5 L100 4.5 L100 6" pathLength="1" /></svg>}
-                </a>
+    <section class="group" aria-labelledby="g-tooth">
+      <div class="head">
+        <p class="label">Houndstooth</p>
+        <h2 id="g-tooth">Houndstooth in motion</h2>
+        <p class="muted note">Four ideas for a moving houndstooth: a loading mark, a logo, the footer band and a pattern that reacts to you.</p>
+      </div>
+      <div class="tooth-grid">
+        <figure class="tooth-card">
+          <div class="stage">
+            <svg class="loom" viewBox="0 0 24 24" aria-label="Loading">
+              {grid(3, 3).map((t) => pieces.map((d, k) => (
+                <path d={d} transform={`translate(${t.x} ${t.y})`} style={`--d: ${(t.c + t.r) * 0.12 + k * 0.05}s`} />
+              )))}
+            </svg>
+          </div>
+          <figcaption>
+            <p class="label">A. Loom</p>
+            <p class="muted small">A loading mark. The pattern weaves itself piece by piece from the corner, then unweaves, like thread on a loom. For the RSVP send button and page loads.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="tooth-card">
+          <a class="stage demo logo-demo" href="#">
+            <svg class="mark" viewBox="0 0 16 16" aria-hidden="true">
+              {grid(2, 2).map((t, i) => (
+                <g transform={`translate(${t.x} ${t.y})`}><g class="tile" style={`--i: ${i}`}>{pieces.map((d) => <path d={d} />)}</g></g>
               ))}
-            </nav>
+            </svg>
+            <span class="logo-word">D<em>&amp;</em>S</span>
+          </a>
+          <figcaption>
+            <p class="label">B. Monogram mark</p>
+            <p class="muted small">A small logo: four houndstooth tiles beside D&amp;S. On hover each tile turns a quarter, one after the other, and locks back into the pattern, like a dial that clicks.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="tooth-card">
+          <div class="stage band-stage"><div class="breeze" aria-hidden="true"></div></div>
+          <figcaption>
+            <p class="label">C. Breeze</p>
+            <p class="muted small">The footer band. A slow, soft light moves across the pattern, like wind over a field of grass. Very quiet; it loops every few seconds.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="tooth-card">
+          <div class="stage field-stage">
+            <svg class="field" viewBox="0 0 160 64" aria-hidden="true">
+              <defs><g id="tooth">{pieces.map((d) => <path d={d} />)}</g></defs>
+              {grid(20, 8).map((t) => (
+                <g transform={`translate(${t.x} ${t.y})`}><use href="#tooth" class="cell" data-x={t.x + 4} data-y={t.y + 4} /></g>
+              ))}
+            </svg>
           </div>
-        ))}
+          <figcaption>
+            <p class="label">D. Field</p>
+            <p class="muted small">A houndstooth panel that reacts to your pointer. The teeth near it turn a little, like grass that bends as you walk through. For the home page or the RSVP card.</p>
+          </figcaption>
+        </figure>
       </div>
     </section>
-
-    <!-- Buttons -->
-    <section class="lab-group" aria-labelledby="g-btn">
-      <div class="variant-head"><p class="label">Buttons</p><h2 id="g-btn">Buttons</h2><p class="muted note">RSVP, Continue and Send RSVP. All use the Extend arrow.</p></div>
-      <div class="demo-grid">
-        {[
-          ['fill', 'Moss', 'The button turns moss.'],
-          ['horizon', 'Horizon', 'Moss opens from a middle line, up and down, like the photo reveal.'],
-          ['range', 'Range', 'Moss rises from the bottom with a ridgeline edge, like mountains that fill the button.'],
-          ['outline', 'Outline', 'The fill drains away and leaves a fine outline, like an engineering drawing.'],
-        ].map(([k, name, note], n) => (
-          <div class="demo-card">
-            <p class="label">{n + 1}. {name}</p>
-            <p class="muted small">{note}</p>
-            <a class={`button demo btn-${k}`} href="#">
-              {k === 'range' && <svg class="range-svg" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40 L0 14 L10 9 L18 13 L28 5 L38 11 L48 7 L58 12 L68 4 L78 10 L88 7 L100 12 L100 40Z" /></svg>}
-              <span class="btn-label">RSVP</span> <Arrow />
-            </a>
-          </div>
-        ))}
-      </div>
-    </section>
-
-    <!-- Text links -->
-    <section class="lab-group" aria-labelledby="g-link">
-      <div class="variant-head"><p class="label">Links</p><h2 id="g-link">Text links</h2><p class="muted note">Links inside text, for example on the Travel and FAQ pages.</p></div>
-      <div class="demo-grid">
-        {[
-          ['color', 'Color', 'The link turns moss.'],
-          ['draw', 'Draw', 'A moss underline draws from left to right over the gray one.'],
-          ['contour', 'Contour', 'The underline turns into a soft wave, like a contour line.'],
-          ['level', 'Level', 'A pale moss band rises behind the word, like a water level.'],
-        ].map(([k, name, note], n) => (
-          <div class="demo-card">
-            <p class="label">{n + 1}. {name}</p>
-            <p class="muted small">{note}</p>
-            <p class="link-sample">The nearest airport is <a class={`demo tl-${k}`} href="#">Denver International</a>, about an hour away.</p>
-          </div>
-        ))}
-      </div>
-    </section>
-
-    <!-- FAQ -->
-    <section class="lab-group" aria-labelledby="g-faq">
-      <div class="variant-head"><p class="label">FAQ</p><h2 id="g-faq">FAQ questions</h2><p class="muted note">Open and close a question. Versions 2 to 4 also open smoothly, not in one jump.</p></div>
-      <div class="demo-grid">
-        {[
-          ['plus', 'Plus', 'A plus turns into a minus. The answer shows at once.'],
-          ['hinge', 'Hinge', 'A chevron turns down like a hinge, and the answer slides open.'],
-          ['horizon', 'Horizon', 'A line draws across, then the answer opens below it.'],
-          ['ridge', 'Ridge', 'A ridgeline draws under the question, then the answer slides open.'],
-        ].map(([k, name, note], n) => (
-          <div class="demo-card">
-            <p class="label">{n + 1}. {name}</p>
-            <p class="muted small">{note}</p>
-            <details class={`card faq faq-${k}`}>
-              <summary>
-                <span>Is there parking?</span>
-                <span class="faq-icon" aria-hidden="true" />
-                {k === 'ridge' && <svg class="faq-rline" viewBox="0 0 1000 16" preserveAspectRatio="none" aria-hidden="true"><path d={ridge(41 + n)} pathLength="1" /></svg>}
-              </summary>
-              <div class="faq-body"><p>Yes. Free parking is next to the castle. Shuttles will also run from the hotels.</p></div>
-            </details>
-          </div>
-        ))}
-      </div>
-    </section>
-
-    <!-- Form fields -->
-    <section class="lab-group" aria-labelledby="g-field">
-      <div class="variant-head"><p class="label">Form</p><h2 id="g-field">Form fields</h2><p class="muted note">Click into a field to see its focus state.</p></div>
-      <div class="demo-grid">
-        {[
-          ['outline', 'Outline', 'A dark outline shows around the field.'],
-          ['line', 'Line', 'The field has only a bottom line. A moss line draws across it.'],
-          ['level', 'Level', 'A pale moss level rises inside the field.'],
-          ['ridge', 'Ridge', 'A ridgeline draws along the bottom of the field.'],
-        ].map(([k, name, note], n) => (
-          <div class="demo-card">
-            <p class="label">{n + 1}. {name}</p>
-            <p class="muted small">{note}</p>
-            <label class={`field field-${k}`}>
-              <span class="field-label">Your name</span>
-              <span class="field-box">
-                <input type="text" placeholder="First and last name" />
-                {k === 'ridge' && <svg class="field-rline" viewBox="0 0 1000 16" preserveAspectRatio="none" aria-hidden="true"><path d={ridge(61 + n)} pathLength="1" /></svg>}
-              </span>
-            </label>
-          </div>
-        ))}
-      </div>
-    </section>
-
-    <!-- Photos -->
-    <section class="lab-group" aria-labelledby="g-photo">
-      <div class="variant-head"><p class="label">Photos</p><h2 id="g-photo">Photo hover</h2><p class="muted note">Now photos do nothing on hover. These are options.</p></div>
-      <div class="demo-grid">
-        {[
-          ['none', 'Still', 'No hover motion.'],
-          ['lens', 'Lens', 'The photo slowly moves closer, like a lens that focuses.'],
-          ['marks', 'Crop marks', 'Fine corner marks draw outside the photo, like a print proof.'],
-          ['note', 'Field note', 'The caption line draws across and the note slides in.'],
-        ].map(([k, name, note], n) => (
-          <div class="demo-card">
-            <p class="label">{n + 1}. {name}</p>
-            <p class="muted small">{note}</p>
-            <a class={`demo photo-demo ph-${k}`} href="#">
-              <Photo media={fieldNotes[n % fieldNotes.length]} index={n + 1} ratio="4 / 5" sizes="(min-width: 900px) 25vw, 90vw" />
-              {k === 'marks' && <span class="marks" aria-hidden="true"><i /><i /><i /><i /></span>}
-            </a>
-          </div>
-        ))}
-      </div>
-    </section>
-
-    <div class="variant-head lines-head"><p class="label">Rows</p><h2>Hover line on rows</h2><p class="muted note">You chose D, Ridgeline. It is on the home page now.</p></div>
-
-    {
-      variants.map((v, n) => (
-        <section class={`variant v-${v.key}`} data-variant={v.key}>
-          <div class="variant-head">
-            <p class="label">{String.fromCharCode(65 + n)}</p>
-            <h2>{v.name}</h2>
-            <p class="muted note">{v.note}</p>
-            <button class="play label" type="button">Play</button>
-          </div>
-          {rows.map((row, i) => (
-            <a class="row" href="#" style={`--row: ${i}`}>
-              <span class="num label">{String(i + 1).padStart(2, '0')}</span>
-              <span class="title">{row.title}</span>
-              <span class="text muted">{row.text}</span>
-              <span class="go"><Arrow /></span>
-              <svg class="mark" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
-                {v.key === 'ruler' && (
-                  <g class="ticks">
-                    <line x1="0" x2={W} y1={H - 0.5} y2={H - 0.5} />
-                    {ticks(10).map((x) => (
-                      <line x1={x} x2={x} y1={x % 50 === 0 ? H - 8 : H - 4} y2={H} />
-                    ))}
-                  </g>
-                )}
-                {v.key === 'contour' && (
-                  <g>
-                    {[H - 1.5, H - 6, H - 10.5].map((base, k) => (
-                      <path d={contour(11 + i * 7 + k, base)} pathLength="1" style={`--k: ${k}`} />
-                    ))}
-                  </g>
-                )}
-                {v.key === 'ridge' && <path class="ridge" d={ridge(5 + i * 13)} pathLength="1" />}
-                {v.key === 'meadow' && (
-                  <g>
-                    {meadow(3 + i * 17).map((b) => (
-                      <line class="blade" x1={b.x} x2={b.x} y1={H - b.h} y2={H} style={`--i: ${b.i}`} />
-                    ))}
-                  </g>
-                )}
-                {v.key === 'ripple' && (
-                  <g>
-                    {ticks(12).map((x) => (
-                      <line class="tick" x1={x} x2={x} y1="0" y2={H} data-x={x} />
-                    ))}
-                  </g>
-                )}
-              </svg>
-              {v.key === 'water' && (
-                <span class="level" aria-hidden="true">
-                  <span class="scale" />
-                </span>
-              )}
-            </a>
-          ))}
-        </section>
-      ))
-    }
   </div>
 </Layout>
 
 <style>
-  .variant { margin: 0 0 clamp(72px, 10vw, 128px); }
-  .variant-head {
-    display: grid;
-    gap: 6px 32px;
-    border-top: 1px solid var(--text);
-    padding-top: 18px;
-    margin-bottom: 8px;
-  }
-  .variant-head h2 { margin: 0; }
-  .variant-head .note { margin: 0; max-width: 40ch; }
-  .play {
-    justify-self: start;
-    background: none;
-    border: 1px solid var(--text);
-    color: var(--text);
-    padding: 8px 16px;
-    cursor: pointer;
-    transition: background-color 0.3s var(--machined), color 0.3s var(--machined);
-  }
-  .play:hover { background: var(--text); color: var(--bg); }
-  @media (min-width: 900px) {
-    .variant-head { grid-template-columns: 2fr 4fr 5fr auto; align-items: baseline; }
-  }
+  .group { margin: 0 0 clamp(72px, 10vw, 128px); }
+  .head { display: grid; gap: 6px 32px; border-top: 1px solid var(--text); padding-top: 18px; margin-bottom: 32px; }
+  .head h2 { margin: 0; }
+  .head .note { margin: 0; max-width: 44ch; }
+  @media (min-width: 900px) { .head { grid-template-columns: 2fr 4fr 6fr; align-items: baseline; } }
+  .small { font-size: 0.95rem; margin: 6px 0 0; }
 
-  /* Rows: the same layout as "The details" on the home page. */
-  .row {
-    display: grid;
-    grid-template-columns: 44px 1fr auto;
-    grid-template-areas: 'num title go' 'num text go';
-    align-items: baseline;
-    column-gap: 16px;
-    padding: 24px 0;
-    border-bottom: 1px solid var(--line);
-    text-decoration: none;
-    color: var(--text);
-    position: relative;
-    isolation: isolate;
-  }
-  .row:hover { color: var(--text); }
-  .num { grid-area: num; transition: color 0.4s var(--machined); }
-  .title {
-    grid-area: title;
-    font-family: var(--display);
-    font-size: clamp(1.8rem, 4.8vw, 2.8rem);
-    line-height: 1.1;
-  }
-  .text { grid-area: text; font-size: 1rem; }
-  .go { grid-area: go; align-self: center; font-size: 1.3rem; display: flex; }
-  @media (min-width: 720px) {
-    .row { grid-template-columns: 2fr 6fr 4fr auto; grid-template-areas: 'num title text go'; }
-  }
-  .row:is(:hover, :focus-visible, .on) .num { color: var(--accent); }
-
-  /* The drawing sits on the bottom line of the row, under the text. */
-  .mark {
-    position: absolute;
-    left: 0;
-    bottom: -1px;
-    width: 100%;
-    height: 16px;
-    overflow: visible;
-    pointer-events: none;
-    fill: none;
-    stroke: var(--accent);
-    stroke-width: 1;
-  }
-  /* Keep vertical lines 1px wide at any row width. Paths keep normal scaling,
-     because the dash animation needs it. */
-  .mark line { vector-effect: non-scaling-stroke; }
-
-  /* Arrow versions */
-  .arrows { margin: 0 0 clamp(72px, 10vw, 128px); }
-  .arrow-grid { display: grid; gap: 40px 32px; margin-top: 24px; }
-  @media (min-width: 900px) { .arrow-grid { grid-template-columns: repeat(4, 1fr); } }
-  .arrow-card .small { font-size: 0.95rem; min-height: 5em; margin: 6px 0 4px; }
-  .arrow-card .row { grid-template-columns: 1fr auto; grid-template-areas: 'title go'; margin-bottom: 20px; }
-  .v-ridge-row .ridge {
-    stroke-dasharray: 1;
-    stroke-dashoffset: 1;
-    fill: color-mix(in srgb, var(--accent) 0%, transparent);
-    transition: stroke-dashoffset 0.8s var(--machined), fill 0.5s var(--ease);
-  }
-  .v-ridge-row:is(:hover, :focus-visible, .on) .ridge {
-    stroke-dashoffset: 0;
-    fill: color-mix(in srgb, var(--accent) 14%, transparent);
-    transition-delay: 0s, 0.5s;
-  }
-
-  /* ---------- Groups of small demos ---------- */
-  .lab-group { margin: 0 0 clamp(72px, 10vw, 128px); }
-  .lines-head { margin-bottom: 40px; }
-  .demo-grid { display: grid; gap: 40px 32px; margin-top: 24px; }
-  @media (min-width: 900px) { .demo-grid { grid-template-columns: repeat(4, 1fr); } }
-  .demo-card .small { font-size: 0.95rem; min-height: 5em; margin: 6px 0 12px; }
-
-  /* Menu links */
-  .fake-nav { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+  /* ---------- Menu links ---------- */
+  .menus { display: grid; gap: 0; }
+  .menu-demo { display: grid; gap: 12px 32px; padding: 28px 0; border-bottom: 1px solid var(--line); }
+  @media (min-width: 900px) { .menu-demo { grid-template-columns: 5fr 7fr; align-items: center; } }
+  .menu-text p { margin: 0; }
+  .fake-nav { position: relative; display: flex; flex-wrap: wrap; gap: 8px 30px; }
   .navlink {
-    position: relative;
-    padding: 8px 0;
-    text-decoration: none;
-    color: var(--text);
-    font-size: 0.72rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    position: relative; padding: 8px 0; text-decoration: none; color: var(--text);
+    font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
   }
   .navlink:hover { color: var(--text); }
+  .navlink[aria-current='page'] { font-weight: 500; }
+
+  /* 1. Hairline */
   .nav-hairline .navlink::after {
     content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: currentColor;
     transform: scaleX(0); transform-origin: right; transition: transform 0.5s var(--ease);
   }
-  .nav-hairline .navlink:is(:hover, :focus-visible, .on)::after { transform: scaleX(1); transform-origin: left; }
-  .nr { position: absolute; left: 0; bottom: -1px; width: 100%; height: 6px; overflow: visible; }
-  .nr path {
-    fill: color-mix(in srgb, var(--accent) 0%, transparent); stroke: var(--accent); stroke-width: 1;
-    stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 0.5s var(--machined), fill 0.4s var(--ease);
+  .nav-hairline .navlink:is(:hover, :focus-visible, .on, [aria-current='page'])::after { transform: scaleX(1); transform-origin: left; }
+
+  /* 2. Glide: the script moves one line. */
+  .glider {
+    position: absolute; left: 0; bottom: 0; height: 1px; width: 1px; background: var(--text);
+    transform-origin: left; pointer-events: none;
+    transform: translateX(var(--gx, 0px)) scaleX(var(--gw, 0));
+    transition: transform 0.55s var(--glide);
   }
-  .nav-ridge .navlink:is(:hover, :focus-visible, .on) .nr path { stroke-dashoffset: 0; fill: color-mix(in srgb, var(--accent) 18%, transparent); transition-delay: 0s, 0.3s; }
-  .nav-sunrise .navlink::after {
-    content: ''; position: absolute; left: 50%; bottom: -4px; width: 5px; height: 5px; margin-left: -2.5px;
-    border-radius: 50%; background: var(--accent); opacity: 0; transform: translateY(6px);
+
+  /* 3. Contour */
+  .nav-contour .navlink {
+    background: var(--contour) 0 100% / 24px 1px repeat-x;
+    background-size: 24px 0px;
+    transition: background-size 0.45s var(--glide);
+  }
+  .nav-contour .navlink[aria-current='page'] { background-size: 24px 1px; }
+  .nav-contour .navlink:is(:hover, :focus-visible, .on) { background-size: 24px 6px; }
+
+  /* 4. Summit */
+  .peak {
+    position: absolute; left: 50%; bottom: -4px; width: 10px; height: 5px; margin-left: -5px; overflow: visible;
+    fill: none; stroke: var(--accent); stroke-width: 1;
+    opacity: 0; transform: translateY(5px); transition: transform 0.45s var(--glide), opacity 0.3s var(--ease);
+  }
+  .nav-summit .navlink:is(:hover, :focus-visible, .on, [aria-current='page']) .peak { opacity: 1; transform: none; }
+
+  /* 5. Brackets */
+  .brk { position: absolute; inset: 2px -8px; pointer-events: none; }
+  .brk i {
+    position: absolute; width: 5px; height: 5px; border: 0 solid var(--accent); opacity: 0;
     transition: transform 0.45s var(--glide), opacity 0.3s var(--ease);
   }
-  .nav-sunrise .navlink:is(:hover, :focus-visible, .on)::after { opacity: 1; transform: none; }
-  .nav-marker .navlink::before {
-    content: ''; position: absolute; left: 50%; top: -6px; width: 1px; height: 8px; background: var(--accent);
-    transform: scaleY(0); transform-origin: top; transition: transform 0.4s var(--glide);
-  }
-  .nav-marker .navlink:is(:hover, :focus-visible, .on)::before { transform: scaleY(1); }
+  .brk i:nth-child(1) { left: 0; top: 0; border-width: 1px 0 0 1px; transform: translate(-6px, -4px); }
+  .brk i:nth-child(2) { right: 0; top: 0; border-width: 1px 1px 0 0; transform: translate(6px, -4px); }
+  .brk i:nth-child(3) { left: 0; bottom: 0; border-width: 0 0 1px 1px; transform: translate(-6px, 4px); }
+  .brk i:nth-child(4) { right: 0; bottom: 0; border-width: 0 1px 1px 0; transform: translate(6px, 4px); }
+  .nav-brackets .navlink:is(:hover, :focus-visible, .on, [aria-current='page']) .brk i { opacity: 1; transform: none; }
 
-  /* Buttons. Version 1 is the global .button style. */
-  .btn-label { position: relative; }
-  .btn-horizon:hover, .btn-range:hover, .btn-outline:hover,
-  .btn-horizon.on, .btn-range.on, .btn-outline.on { background: var(--text); border-color: var(--text); }
-  .btn-fill.on { background: var(--accent); border-color: var(--accent); }
-  .btn-horizon::before, .btn-outline::before {
-    content: ''; position: absolute; inset: 0; z-index: -1;
+  /* ---------- Houndstooth ---------- */
+  .tooth-grid { display: grid; gap: 48px 32px; }
+  @media (min-width: 900px) { .tooth-grid { grid-template-columns: repeat(4, 1fr); } }
+  .tooth-card { margin: 0; }
+  .stage {
+    display: grid; place-items: center; aspect-ratio: 1; background: var(--surface);
+    border: 1px solid var(--line); margin-bottom: 14px; text-decoration: none; color: var(--text); overflow: hidden;
   }
-  .btn-horizon::before { background: var(--accent); transform: scaleY(0); transition: transform 0.45s var(--machined); }
-  .btn-horizon:is(:hover, :focus-visible, .on)::before { transform: scaleY(1); }
-  .btn-range { isolation: isolate; }
-  .range-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; fill: var(--accent); transform: translateY(102%); transition: transform 0.55s var(--glide); }
-  .btn-range:is(:hover, :focus-visible, .on) .range-svg { transform: translateY(0); }
-  .btn-outline { transition: color 0.4s var(--machined), background-color 0.4s var(--machined); }
-  .btn-outline::before { background: var(--text); transform-origin: bottom; transition: transform 0.45s var(--machined); }
-  .btn-outline:is(:hover, :focus-visible, .on) { color: var(--text); background: transparent; }
-  .btn-outline:is(:hover, :focus-visible, .on)::before { transform: scaleY(0); }
+  .tooth-card figcaption p { margin: 0; }
 
-  /* Text links */
-  .link-sample { font-size: 1.05rem; margin: 0; }
-  .link-sample a { color: var(--text); }
-  .tl-color:is(:hover, .on) { color: var(--accent); }
-  .tl-draw, .tl-contour, .tl-level { text-decoration: none; background-repeat: no-repeat; }
-  .tl-draw {
-    background-image: linear-gradient(var(--accent), var(--accent)), linear-gradient(var(--line), var(--line));
-    background-size: 0% 1px, 100% 1px; background-position: 0 100%, 0 100%;
-    transition: background-size 0.5s var(--machined);
+  /* A. Loom */
+  .loom { width: 96px; height: 96px; fill: var(--accent); }
+  .loom path { opacity: 0; animation: weave 2.6s var(--machined) infinite; animation-delay: var(--d); }
+  @keyframes weave {
+    0% { opacity: 0; transform: scale(0.6); }
+    18%, 62% { opacity: 1; transform: none; }
+    80%, 100% { opacity: 0; transform: none; }
   }
-  .tl-draw:is(:hover, :focus-visible, .on) { background-size: 100% 1px, 100% 1px; color: var(--text); }
-  .tl-contour {
-    background-image:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 4'%3E%3Cpath d='M0 2 Q5 0 10 2 T20 2' fill='none' stroke='%2355653f' stroke-width='1'/%3E%3C/svg%3E"),
-      linear-gradient(var(--text), var(--text));
-    background-size: 20px 4px, 100% 1px; background-position: 0 calc(100% + 4px), 0 100%;
-    background-repeat: repeat-x, no-repeat;
-    padding-bottom: 3px;
-    transition: background-position 0.4s var(--glide), background-size 0.4s var(--machined);
-  }
-  .tl-contour:is(:hover, :focus-visible, .on) { background-position: -20px 100%, 0 100%; background-size: 20px 4px, 0% 1px; color: var(--text); }
-  .tl-level {
-    background-image: linear-gradient(color-mix(in srgb, var(--accent) 16%, transparent), color-mix(in srgb, var(--accent) 16%, transparent)), linear-gradient(var(--text), var(--text));
-    background-size: 100% 0%, 100% 1px; background-position: 0 100%, 0 100%;
-    transition: background-size 0.4s var(--glide);
-  }
-  .tl-level:is(:hover, :focus-visible, .on) { background-size: 100% 45%, 100% 1px; color: var(--text); }
+  .loom path { transform-box: fill-box; transform-origin: center; }
 
-  /* FAQ. Smooth open where the browser supports it. */
-  .faq { padding: 18px 20px; margin: 0; }
-  .faq summary {
-    list-style: none; cursor: pointer; position: relative;
-    display: flex; justify-content: space-between; align-items: center; gap: 16px;
-    font-weight: 500;
+  /* B. Monogram mark */
+  .logo-demo { grid-auto-flow: column; gap: 12px; place-content: center; }
+  .mark { width: 34px; height: 34px; fill: var(--accent); overflow: visible; }
+  .mark .tile { transform-box: fill-box; transform-origin: center; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); transition-delay: calc(var(--i) * 0.07s); }
+  .logo-demo:is(:hover, :focus-visible, .on) .tile { transform: rotate(90deg); }
+  .logo-word { font-family: var(--display); font-size: 2rem; letter-spacing: 0.04em; }
+  .logo-word em { font-family: var(--serif); font-style: italic; color: var(--accent); margin: 0 0.08em; }
+
+  /* C. Breeze: a soft light band moves across the pattern. */
+  .band-stage { place-items: stretch; }
+  .breeze {
+    background: var(--houndstooth) 0 0 / 12px 12px;
+    -webkit-mask-image: linear-gradient(100deg, rgb(0 0 0 / 0.35) 30%, #000 45%, rgb(0 0 0 / 0.35) 60%);
+    mask-image: linear-gradient(100deg, rgb(0 0 0 / 0.35) 30%, #000 45%, rgb(0 0 0 / 0.35) 60%);
+    -webkit-mask-size: 300% 100%;
+    mask-size: 300% 100%;
+    animation: breeze 7s ease-in-out infinite;
   }
-  .faq summary::-webkit-details-marker { display: none; }
-  .faq-body p { margin: 12px 0 0; color: var(--muted); }
-  .faq-icon { position: relative; width: 14px; height: 14px; flex: none; }
-  .faq-plus .faq-icon {
-    background: linear-gradient(currentColor, currentColor) center / 14px 1px no-repeat, linear-gradient(currentColor, currentColor) center / 1px 14px no-repeat;
-    transition: transform 0.5s var(--ease), background-size 0.5s var(--ease);
-  }
-  .faq-plus[open] .faq-icon { transform: rotate(180deg); background-size: 14px 1px, 1px 0; }
-  .faq-hinge .faq-icon::before {
-    content: ''; position: absolute; inset: 2px 3px 5px; border: solid currentColor; border-width: 0 1px 1px 0;
-    transform: rotate(-45deg); transition: transform 0.45s var(--machined);
-  }
-  .faq-hinge[open] .faq-icon::before { transform: rotate(45deg); }
-  .faq-horizon summary::after {
-    content: ''; position: absolute; left: 0; right: 0; bottom: -10px; height: 1px; background: var(--accent);
-    transform: scaleX(0); transform-origin: left; transition: transform 0.4s var(--machined);
-  }
-  .faq-horizon[open] summary::after { transform: scaleX(1); }
-  .faq-horizon .faq-icon { display: block; background: linear-gradient(currentColor, currentColor) center / 14px 1px no-repeat, linear-gradient(currentColor, currentColor) center / 1px 14px no-repeat; transition: background-size 0.4s var(--ease); }
-  .faq-horizon[open] .faq-icon { background-size: 14px 1px, 1px 0; }
-  .faq-ridge .faq-icon { background: linear-gradient(currentColor, currentColor) center / 14px 1px no-repeat, linear-gradient(currentColor, currentColor) center / 1px 14px no-repeat; transition: background-size 0.4s var(--ease); }
-  .faq-ridge[open] .faq-icon { background-size: 14px 1px, 1px 0; }
-  .faq-ridge { position: relative; }
-  .faq-rline { position: absolute; left: 0; bottom: -12px; width: 100%; height: 10px; overflow: visible; }
-  .faq-ridge svg path {
-    fill: color-mix(in srgb, var(--accent) 0%, transparent); stroke: var(--accent); stroke-width: 1;
-    stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 0.6s var(--machined), fill 0.4s var(--ease);
-  }
-  .faq-ridge[open] svg path { stroke-dashoffset: 0; fill: color-mix(in srgb, var(--accent) 14%, transparent); transition-delay: 0s, 0.4s; }
-  @supports (interpolate-size: allow-keywords) {
-    :is(.faq-hinge, .faq-horizon, .faq-ridge) { interpolate-size: allow-keywords; }
-    :is(.faq-hinge, .faq-horizon, .faq-ridge)::details-content {
-      height: 0; overflow: clip; opacity: 0;
-      transition: height 0.45s var(--glide), opacity 0.35s var(--ease), content-visibility 0.45s allow-discrete;
-    }
-    :is(.faq-hinge, .faq-horizon, .faq-ridge)[open]::details-content { height: auto; opacity: 1; }
-    .faq-horizon[open]::details-content, .faq-ridge[open]::details-content { transition-delay: 0.2s; }
+  @keyframes breeze {
+    from { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+    to { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
   }
 
-  /* Form fields */
-  .field { display: grid; gap: 6px; }
-  .field-label { font-weight: 600; font-size: 0.95rem; }
-  .field-box { position: relative; display: block; isolation: isolate; }
-  .field input {
-    width: 100%; font: inherit; font-size: 1rem; padding: 12px 14px; color: var(--text);
-    background: var(--surface); border: 1px solid var(--line); border-radius: 0; outline: none;
-    transition: border-color 0.2s;
-  }
-  .field-outline input:focus { outline: 1px solid var(--text); border-color: var(--text); }
-  .field-line input { background: transparent; border-width: 0 0 1px; padding-left: 0; }
-  .field-line .field-box::after {
-    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--accent);
-    transform: scaleX(0); transform-origin: left; transition: transform 0.45s var(--machined);
-  }
-  .field-line .field-box:focus-within::after { transform: scaleX(1); }
-  .field-level input { background: transparent; }
-  .field-level .field-box::before {
-    content: ''; position: absolute; inset: 1px; z-index: -1; background: var(--surface);
-  }
-  .field-level .field-box::after {
-    content: ''; position: absolute; inset: 1px; z-index: -1; background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-    border-top: 1px solid var(--accent); transform: scaleY(0); transform-origin: bottom; transition: transform 0.45s var(--glide);
-  }
-  .field-level input:focus { border-color: var(--accent); }
-  .field-level .field-box:focus-within::after { transform: scaleY(1); }
-  .field-rline { position: absolute; left: 0; bottom: 0; width: 100%; height: 12px; overflow: visible; pointer-events: none; }
-  .field-rline path {
-    fill: color-mix(in srgb, var(--accent) 0%, transparent); stroke: var(--accent); stroke-width: 1;
-    stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 0.6s var(--machined), fill 0.4s var(--ease);
-  }
-  .field-ridge .field-box:focus-within path { stroke-dashoffset: 0; fill: color-mix(in srgb, var(--accent) 12%, transparent); transition-delay: 0s, 0.35s; }
-  .field-ridge input:focus { border-color: var(--accent); }
+  /* D. Field */
+  .field-stage { aspect-ratio: auto; height: auto; padding: 12px; }
+  .field { width: 100%; height: auto; fill: var(--accent); }
+  .field .cell { transform-box: fill-box; transform-origin: center; transition: transform 0.5s var(--glide); }
+  @media (min-width: 900px) { .field-stage { aspect-ratio: 1; } }
 
-  /* Photos */
-  .photo-demo { display: block; position: relative; text-decoration: none; color: inherit; }
-  .photo-demo :global(.frame > *) { transition: transform 1.4s var(--glide); }
-  .ph-lens:is(:hover, :focus-visible, .on) :global(.frame > *) { transform: scale(1.04); }
-  /* The marks box matches the 4:5 photo frame, not the caption below it. */
-  .marks { position: absolute; inset: 0 0 auto 0; aspect-ratio: 4 / 5; pointer-events: none; }
-  .marks i {
-    position: absolute; width: 14px; height: 14px; border: 0 solid var(--accent);
-    opacity: 0; transition: opacity 0.3s var(--ease), transform 0.45s var(--glide);
+  @media (prefers-reduced-motion: reduce) {
+    .loom path { animation: none !important; opacity: 1; }
+    .breeze { animation: none !important; }
   }
-  .marks i:nth-child(1) { left: -8px; top: -8px; border-width: 1px 0 0 1px; transform: translate(6px, 6px); }
-  .marks i:nth-child(2) { right: -8px; top: -8px; border-width: 1px 1px 0 0; transform: translate(-6px, 6px); }
-  .marks i:nth-child(3) { left: -8px; bottom: -8px; border-width: 0 0 1px 1px; transform: translate(6px, -6px); }
-  .marks i:nth-child(4) { right: -8px; bottom: -8px; border-width: 0 1px 1px 0; transform: translate(-6px, -6px); }
-  .ph-marks:is(:hover, :focus-visible, .on) .marks i { opacity: 1; transform: none; }
-  .ph-note :global(figcaption) { position: relative; padding-top: 8px; }
-  .ph-note :global(figcaption)::before {
-    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--accent);
-    transform: scaleX(0); transform-origin: left; transition: transform 0.5s var(--machined);
-  }
-  .ph-note :global(figcaption > span) { transition: transform 0.5s var(--glide), opacity 0.4s var(--ease); }
-  .ph-note:not(:hover):not(.on):not(:focus-visible) :global(figcaption > span:first-child) { opacity: 0.4; transform: translateY(4px); }
-  .ph-note:is(:hover, :focus-visible, .on) :global(figcaption)::before { transform: scaleX(1); }
-
-  /* A. Ruler */
-  .v-ruler .ticks { clip-path: inset(0 100% 0 0); transition: clip-path 0.45s var(--machined); }
-  .v-ruler .row:is(:hover, :focus-visible, .on) .ticks { clip-path: inset(0 0 0 0); }
-
-  /* B. Water level: a flat tint rises from the bottom, with a scale on the left. */
-  .level {
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background: color-mix(in srgb, var(--accent) 9%, transparent);
-    border-top: 1px solid var(--accent);
-    transform: scaleY(0);
-    transform-origin: bottom;
-    transition: transform 0.6s var(--glide);
-  }
-  .scale {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 10px;
-    background:
-      repeating-linear-gradient(to top, var(--accent) 0 1px, transparent 1px 8px) left / 6px 100% no-repeat,
-      repeating-linear-gradient(to top, var(--accent) 0 1px, transparent 1px 32px) left / 10px 100% no-repeat;
-    opacity: 0;
-    transition: opacity 0.4s var(--ease) 0.2s;
-  }
-  .v-water .row:is(:hover, :focus-visible, .on) .level { transform: scaleY(1); }
-  .v-water .row:is(:hover, :focus-visible, .on) .scale { opacity: 1; }
-  .v-water .mark { display: none; }
-
-  /* C. Contour lines */
-  .v-contour path {
-    stroke-dasharray: 1;
-    stroke-dashoffset: 1;
-    opacity: calc(1 - var(--k) * 0.25);
-    transition: stroke-dashoffset 0.7s var(--glide);
-    transition-delay: calc(var(--k) * 0.09s);
-  }
-  .v-contour .row:is(:hover, :focus-visible, .on) path { stroke-dashoffset: 0; }
-
-  /* D. Ridgeline */
-  .v-ridge .ridge {
-    stroke-dasharray: 1;
-    stroke-dashoffset: 1;
-    fill: color-mix(in srgb, var(--accent) 0%, transparent);
-    transition: stroke-dashoffset 0.8s var(--machined), fill 0.5s var(--ease);
-  }
-  .v-ridge .row:is(:hover, :focus-visible, .on) .ridge {
-    stroke-dashoffset: 0;
-    fill: color-mix(in srgb, var(--accent) 14%, transparent);
-    transition-delay: 0s, 0.5s;
-  }
-
-  /* E. Meadow: each blade grows; blades on the left start first. */
-  .v-meadow .blade {
-    transform-box: fill-box;
-    transform-origin: bottom;
-    transform: scaleY(0);
-    transition: transform 0.45s var(--glide);
-    transition-delay: calc(var(--i) * 3ms);
-  }
-  .v-meadow .row:is(:hover, :focus-visible, .on) .blade { transform: scaleY(1); }
-
-  /* F. Ripple: the script sets the height of each tick. */
-  .v-ripple .tick {
-    transform-box: fill-box;
-    transform-origin: bottom;
-    transform: scaleY(0.12);
-    opacity: 0;
-    transition: transform 0.35s var(--glide), opacity 0.3s var(--ease);
-  }
-  .v-ripple .row:is(:hover, :focus-visible, .on) .tick { opacity: 1; }
 </style>
 
 <script>
-  // Rows on this page do not go anywhere. A tap or click plays the effect.
-  document.querySelectorAll<HTMLAnchorElement>('.variant .row').forEach((row) => {
-    row.addEventListener('click', (e) => {
-      e.preventDefault();
-      row.classList.toggle('on');
-    });
-  });
-
-  // Arrow demos: a tap or click plays the motion and does not go anywhere.
-  document.querySelectorAll<HTMLAnchorElement>('.arrows .demo, .lab-group .demo').forEach((el) => {
+  // Taps and clicks play the effect and do not go anywhere.
+  document.querySelectorAll<HTMLAnchorElement>('.demo').forEach((el) => {
     el.addEventListener('click', (e) => {
       e.preventDefault();
-      el.classList.remove('on');
-      void el.getBoundingClientRect();
       el.classList.add('on');
       setTimeout(() => el.classList.remove('on'), 1400);
     });
   });
 
-  // "Play" shows the effect on each row, one after the other.
-  document.querySelectorAll<HTMLElement>('.variant').forEach((section) => {
-    const rows = [...section.querySelectorAll<HTMLElement>('.row')];
-    section.querySelector('.play')?.addEventListener('click', () => {
-      rows.forEach((r) => r.classList.remove('on'));
-      rows.forEach((r, i) => {
-        setTimeout(() => r.classList.add('on'), 250 + i * 450);
-        setTimeout(() => r.classList.remove('on'), 1500 + i * 450);
-      });
+  // Glide: one line moves to the link under the pointer, then back to the current page.
+  document.querySelectorAll<HTMLElement>('.nav-glide').forEach((nav) => {
+    const glider = nav.querySelector<HTMLElement>('.glider')!;
+    const items = [...nav.querySelectorAll<HTMLElement>('.navlink')];
+    const home = items.find((a) => a.getAttribute('aria-current') === 'page') ?? items[0];
+    const to = (a: HTMLElement) => {
+      glider.style.setProperty('--gx', `${a.offsetLeft}px`);
+      glider.style.setProperty('--gw', String(a.offsetWidth));
+      glider.style.top = `${a.offsetTop + a.offsetHeight - 1}px`;
+    };
+    to(home);
+    items.forEach((a) => {
+      a.addEventListener('pointerenter', () => to(a));
+      a.addEventListener('focus', () => to(a));
+      a.addEventListener('click', () => to(a));
     });
+    nav.addEventListener('pointerleave', () => to(home));
+    window.addEventListener('resize', () => to(home));
   });
 
-  // Ripple: ticks near the pointer rise the most, like a wave.
-  document.querySelectorAll<HTMLElement>('.v-ripple .row').forEach((row) => {
-    const ticks = [...row.querySelectorAll<SVGLineElement>('.tick')];
-    const shape = (center: number) => {
-      for (const t of ticks) {
-        const d = (Number(t.dataset.x) - center) / 70;
-        const h = 0.12 + 0.88 * Math.exp(-d * d);
-        t.style.transform = `scaleY(${h.toFixed(3)})`;
+  // Field: teeth near the pointer turn a little, like grass that bends.
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll<SVGSVGElement>('.field').forEach((svg) => {
+    if (still) return;
+    const cells = [...svg.querySelectorAll<SVGUseElement>('.cell')];
+    let frame = 0;
+    const bend = (px: number, py: number) => {
+      for (const c of cells) {
+        const dx = Number(c.dataset.x) - px;
+        const dy = Number(c.dataset.y) - py;
+        const k = Math.exp(-(dx * dx + dy * dy) / 500);
+        c.style.transform = k > 0.02 ? `rotate(${(k * 35 * Math.sign(dx || 1)).toFixed(1)}deg) scale(${(1 - k * 0.25).toFixed(3)})` : '';
       }
     };
-    let frame = 0;
-    row.addEventListener('pointermove', (e) => {
-      const box = row.getBoundingClientRect();
-      const x = ((e.clientX - box.left) / box.width) * 1000;
+    const point = (e: PointerEvent) => {
+      const box = svg.getBoundingClientRect();
+      const px = ((e.clientX - box.left) / box.width) * 160;
+      const py = ((e.clientY - box.top) / box.height) * 64;
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => shape(x));
-    });
-    row.addEventListener('pointerleave', () => ticks.forEach((t) => (t.style.transform = '')));
-    // Tap or Play with no pointer: the wave travels across once.
-    new MutationObserver(() => {
-      if (!row.classList.contains('on') || row.matches(':hover')) return;
-      const start = performance.now();
-      const run = (now: number) => {
-        const t = Math.min((now - start) / 900, 1);
-        shape(-100 + t * 1200);
-        if (t < 1 && row.classList.contains('on')) requestAnimationFrame(run);
-      };
-      requestAnimationFrame(run);
-    }).observe(row, { attributes: true, attributeFilter: ['class'] });
+      frame = requestAnimationFrame(() => bend(px, py));
+    };
+    svg.addEventListener('pointermove', point);
+    svg.addEventListener('pointerdown', point);
+    svg.addEventListener('pointerleave', () => cells.forEach((c) => (c.style.transform = '')));
   });
 </script>

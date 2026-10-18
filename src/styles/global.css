@@ -38,6 +38,13 @@
   /* Houndstooth tile (8 x 8), woven in moss. Use it in two places only. */
   --houndstooth: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath fill='%2355653f' d='M0 0H4V4H0ZM6 0H8L4 4V2ZM8 2V4H6ZM4 4V6L2 8H0ZM0 4H2L0 6Z'/%3E%3C/svg%3E");
 
+  /* A ridgeline (mountain profile) for the focus state of form fields. */
+  --ridge-line: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 16' preserveAspectRatio='none'%3E%3Cpath d='M0 16L0 12L8 7.0L16 7.7L24 5.7L32 5.7L40 5.9L48 5.0L56 6.1L64 7.2L72 7.8L80 7.6L88 6.6L96 6.9L104 7.1L112 6.0L120 5.1L128 5.0L136 4.1L144 5.7L152 4.7L160 6.1L168 7.2L176 8.7L184 8.8L192 10.3L200 10.9L208 11.6L216 14.0L224 12.8L232 12.4L240 11.2L248 11.5L256 12.7L264 11.5L272 11.9L280 11.8L288 13.4L296 12.8L304 13.5L312 13.3L320 14.2L328 15.0L336 13.2L344 11.8L352 10.7L360 9.7L368 8.1L376 7.6L384 8.0L392 6.6L400 6.1L400 16' fill='%2355653f' fill-opacity='.14' stroke='%2355653f' stroke-width='1' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+
+  /* A contour wave for text-link underlines. It stretches from a flat line
+     (1px high) to a soft wave (5px high) on hover. */
+  --contour: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 6' preserveAspectRatio='none'%3E%3Cpath d='M0 3 C4 0.5 8 0.5 12 3 S20 5.5 24 3' fill='none' stroke='%2355653f' stroke-width='1' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+
   /* A pressed sprig: a stem with leaves, drawn in moss. */
   --sprig: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 64' fill='none' stroke='%2355653f' stroke-width='1.1' stroke-linecap='round'%3E%3Cpath d='M20 62C19 46 21 30 20 4'/%3E%3Cpath d='M20 50c-6-1-10-5-11-10 6 0 10 4 11 10Z' fill='%2355653f' fill-opacity='.18'/%3E%3Cpath d='M20 42c6-1 10-5 11-10-6 0-10 4-11 10Z' fill='%2355653f' fill-opacity='.18'/%3E%3Cpath d='M20 32c-5-1-8-5-9-9 5 0 8 4 9 9Z' fill='%2355653f' fill-opacity='.18'/%3E%3Cpath d='M20 24c5-1 8-4 8-8-5 0-8 3-8 8Z' fill='%2355653f' fill-opacity='.18'/%3E%3Cpath d='M20 14c-3-1-5-4-5-7 3 0 5 3 5 7Z' fill='%2355653f' fill-opacity='.18'/%3E%3C/svg%3E");
 
@@ -88,6 +95,16 @@ a {
   transition: color 0.2s;
 }
 a:hover { color: var(--accent); }
+
+/* Text links inside page content: the underline rises from a flat line
+   into a soft contour wave on hover. */
+main a:not([class]) {
+  text-decoration: none;
+  background: var(--contour) 0 100% / 24px 1px repeat-x;
+  padding-bottom: 4px;
+  transition: background-size 0.45s var(--glide), color 0.2s;
+}
+main a:not([class]):is(:hover, :focus-visible) { color: var(--text); background-size: 24px 6px; }
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
