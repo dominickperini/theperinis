@@ -2,6 +2,7 @@
 // Motion lab: a test page to compare versions of the hover line on the
 // "The details" rows. It is not in the menu and search engines do not index it.
 import Layout from '../layouts/Layout.astro';
+import Arrow from '../components/Arrow.astro';
 import { ridgePath } from '../lib/ridge';
 
 // A small seeded random generator, so each build draws the same shapes.
@@ -60,6 +61,13 @@ const variants = [
   { key: 'meadow', name: 'Meadow', note: 'Blades of grass grow up from the line, from left to right.' },
   { key: 'ripple', name: 'Ripple', note: 'Abstract. The ticks rise around your pointer and follow it, like a wave on a level.' },
 ];
+
+const arrows = [
+  { key: 'extend', name: 'Extend', note: 'The line of the arrow reaches out to the left. The head stays still. Precise, like an instrument needle.' },
+  { key: 'compass', name: 'Compass', note: 'At rest the arrow points up. On hover it turns to point ahead, like a compass needle that settles.' },
+  { key: 'trail', name: 'Trail', note: 'The line is a dashed route, like a trail on a map. The dashes move toward the head.' },
+  { key: 'draw', name: 'Draw', note: 'The arrow draws itself again with a pen line: first the line, then the head.' },
+] as const;
 ---
 
 <Layout title="Motion lab" noindex>
@@ -70,6 +78,32 @@ const variants = [
   </header>
 
   <div class="wide">
+    <section class="arrows" aria-labelledby="arrows-title">
+      <div class="variant-head">
+        <p class="label">Arrows</p>
+        <h2 id="arrows-title">Arrow versions</h2>
+        <p class="muted note">Put your pointer on a row or a button, or tap it. Each row also has the ridgeline.</p>
+      </div>
+      <div class="arrow-grid">
+        {
+          arrows.map((a, n) => (
+            <div class="arrow-card">
+              <p class="label">{n + 1}. {a.name}</p>
+              <p class="muted small">{a.note}</p>
+              <a class="row demo v-ridge-row" href="#">
+                <span class="title">Schedule</span>
+                <span class="go"><Arrow motion={a.key} /></span>
+                <svg class="mark" viewBox="0 0 1000 16" preserveAspectRatio="none" aria-hidden="true">
+                  <path class="ridge" d={ridge(5 + n * 13)} pathLength="1" />
+                </svg>
+              </a>
+              <a class="button demo" href="#">RSVP <Arrow motion={a.key} /></a>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
     {
       variants.map((v, n) => (
         <section class={`variant v-${v.key}`} data-variant={v.key}>
@@ -84,7 +118,7 @@ const variants = [
               <span class="num label">{String(i + 1).padStart(2, '0')}</span>
               <span class="title">{row.title}</span>
               <span class="text muted">{row.text}</span>
-              <span class="go" aria-hidden="true">&rarr;</span>
+              <span class="go"><Arrow /></span>
               <svg class="mark" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
                 {v.key === 'ruler' && (
                   <g class="ticks">
@@ -178,12 +212,11 @@ const variants = [
     line-height: 1.1;
   }
   .text { grid-area: text; font-size: 1rem; }
-  .go { grid-area: go; align-self: center; font-size: 1.3rem; }
+  .go { grid-area: go; align-self: center; font-size: 1.3rem; display: flex; }
   @media (min-width: 720px) {
     .row { grid-template-columns: 2fr 6fr 4fr auto; grid-template-areas: 'num title text go'; }
   }
   .row:is(:hover, :focus-visible, .on) .num { color: var(--accent); }
-  .row:is(:hover, :focus-visible, .on) > .go { animation: cycle 0.5s var(--machined); }
 
   /* The drawing sits on the bottom line of the row, under the text. */
   .mark {
@@ -201,6 +234,24 @@ const variants = [
   /* Keep vertical lines 1px wide at any row width. Paths keep normal scaling,
      because the dash animation needs it. */
   .mark line { vector-effect: non-scaling-stroke; }
+
+  /* Arrow versions */
+  .arrows { margin: 0 0 clamp(72px, 10vw, 128px); }
+  .arrow-grid { display: grid; gap: 40px 32px; margin-top: 24px; }
+  @media (min-width: 900px) { .arrow-grid { grid-template-columns: repeat(4, 1fr); } }
+  .arrow-card .small { font-size: 0.95rem; min-height: 5em; margin: 6px 0 4px; }
+  .arrow-card .row { grid-template-columns: 1fr auto; grid-template-areas: 'title go'; margin-bottom: 20px; }
+  .v-ridge-row .ridge {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    fill: color-mix(in srgb, var(--accent) 0%, transparent);
+    transition: stroke-dashoffset 0.8s var(--machined), fill 0.5s var(--ease);
+  }
+  .v-ridge-row:is(:hover, :focus-visible, .on) .ridge {
+    stroke-dashoffset: 0;
+    fill: color-mix(in srgb, var(--accent) 14%, transparent);
+    transition-delay: 0s, 0.5s;
+  }
 
   /* A. Ruler */
   .v-ruler .ticks { clip-path: inset(0 100% 0 0); transition: clip-path 0.45s var(--machined); }
@@ -284,6 +335,17 @@ const variants = [
     row.addEventListener('click', (e) => {
       e.preventDefault();
       row.classList.toggle('on');
+    });
+  });
+
+  // Arrow demos: a tap or click plays the motion and does not go anywhere.
+  document.querySelectorAll<HTMLAnchorElement>('.arrows .demo').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      el.classList.remove('on');
+      void el.getBoundingClientRect();
+      el.classList.add('on');
+      setTimeout(() => el.classList.remove('on'), 1400);
     });
   });
 

@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Photo from '../components/Photo.astro';
+import Arrow from '../components/Arrow.astro';
 import { wedding } from '../data/wedding';
 import { hero, fieldNotes } from '../data/media';
 import { ridgePath, RIDGE_W, RIDGE_H } from '../lib/ridge';
@@ -54,7 +55,7 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
           }
         </dl>
         <div class="cta">
-          <a class="button" href="/rsvp">RSVP <span class="arrow" aria-hidden="true">&rarr;</span></a>
+          <a class="button" href="/rsvp">RSVP <Arrow /></a>
           <p class="label small">Reply before {wedding.rsvpDeadline}</p>
         </div>
       </div>
@@ -89,7 +90,7 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
           <span class="num label">{String(i + 1).padStart(2, '0')}</span>
           <span class="title">{link.title}</span>
           <span class="text muted">{link.text}</span>
-          <span class="go" aria-hidden="true">&rarr;</span>
+          <span class="go"><Arrow /></span>
           <svg class="ridge" viewBox={`0 0 ${RIDGE_W} ${RIDGE_H}`} preserveAspectRatio="none" aria-hidden="true">
             <path d={ridgePath(5 + i * 13)} pathLength="1" />
           </svg>
@@ -265,7 +266,7 @@ const spots = ['n1', 'n2', 'n3', 'n4', 'n5'];
     line-height: 1.1;
   }
   .text { grid-area: text; font-size: 1rem; }
-  .go { grid-area: go; align-self: center; font-size: 1.3rem; }
+  .go { grid-area: go; align-self: center; font-size: 1.3rem; display: flex; }
   @media (min-width: 720px) {
     .index-link { grid-template-columns: 2fr 6fr 4fr auto; grid-template-areas: 'num title text go'; }
   }
