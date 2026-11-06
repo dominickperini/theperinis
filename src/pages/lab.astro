@@ -16,6 +16,23 @@ const menus = [
   { key: 'brackets', name: 'Brackets', note: 'Fine corner marks close in around the link, like a viewfinder that frames it.' },
 ];
 const links = ['Our Story', 'Schedule', 'Travel', 'FAQ'];
+
+// A better houndstooth: the real weave. Houndstooth is a 2/2 twill with
+// 4 dark and 4 light threads in both directions. A cell is dark where the
+// thread on top is dark. This gives the true stepped tooth of the fabric.
+const dark = (x: number, y: number) => ((((x - y) % 4) + 4) % 4 < 2 ? x % 8 < 4 : y % 8 < 4);
+const cells = Array.from({ length: 64 }, (_, i) => ({ x: i % 8, y: Math.floor(i / 8) }));
+const darkCells = cells.filter((c) => dark(c.x, c.y));
+const lightCells = cells.filter((c) => !dark(c.x, c.y));
+
+// Dissolve: whole teeth that get smaller row by row as they rise, like a halftone.
+const fadeCols = 120;
+const fadeRows = 9;
+const fade = grid(fadeCols, fadeRows).map((t) => {
+  const k = (t.r + 1) / fadeRows; // small at the top, full at the bottom
+  return { ...t, s: Math.round(Math.pow(k, 1.6) * 100) / 100 };
+});
+
 ---
 
 <Layout title="Motion lab" noindex>
@@ -26,6 +43,90 @@ const links = ['Our Story', 'Schedule', 'Travel', 'FAQ'];
   </header>
 
   <div class="wide">
+
+    <section class="group" aria-labelledby="g-weave">
+      <div class="head">
+        <p class="label">Houndstooth</p>
+        <h2 id="g-weave">A better houndstooth</h2>
+        <p class="muted note">Now the pattern is a flat tile that repeats. These four versions treat it like the real fabric, or like a precise drawing. Each one is shown as the footer band. Pick one, or tell me what to mix.</p>
+      </div>
+
+      <svg width="0" height="0" class="defs" aria-hidden="true">
+        <defs>
+          <pattern id="weave" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="scale(1.75)">
+            <rect width="8" height="8" class="w-bg" />
+            {lightCells.map((c) => <path class="w-light" d={`M${c.x + 0.2} ${c.y + 0.85}L${c.x + 0.85} ${c.y + 0.2}`} />)}
+            {darkCells.map((c) => <rect class="w-dark" x={c.x + 0.05} y={c.y + 0.05} width="0.9" height="0.9" />)}
+            {darkCells.map((c) => <path class="w-sheen" d={`M${c.x + 0.2} ${c.y + 0.85}L${c.x + 0.85} ${c.y + 0.2}`} />)}
+          </pattern>
+          <pattern id="pepita" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="scale(0.9)">
+            <rect width="8" height="8" class="p-bg" />
+            {pieces.map((d) => <path class="p-dark" d={d} />)}
+          </pattern>
+        </defs>
+      </svg>
+
+      <div class="weave-list">
+        <figure class="weave-row">
+          <div class="band-demo"><svg class="band" preserveAspectRatio="none" aria-hidden="true"><rect width="100%" height="100%" fill="url(#weave)" /></svg></div>
+          <figcaption>
+            <p class="label">A. Woven</p>
+            <p class="muted small">The true weave of the fabric: each square is one thread, with a fine diagonal line like twill. From a distance it reads as houndstooth; close up it reads as cloth. Moss on oat.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="weave-row">
+          <div class="band-demo tall">
+            <svg class="fade" viewBox={`0 0 ${fadeCols * 8} ${fadeRows * 8}`} preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+              {fade.map((t) => (
+                <g transform={`translate(${t.x + 4} ${t.y + 4}) scale(${t.s}) translate(-4 -4)`}>
+                  <g class="ft" style={`--d:${(t.c % 30) * 16 + (fadeRows - t.r) * 40}ms`}>{pieces.map((d) => <path d={d} />)}</g>
+                </g>
+              ))}
+            </svg>
+          </div>
+          <figcaption>
+            <p class="label">B. Dissolve</p>
+            <p class="muted small">The weave is complete at the bottom edge and breaks into smaller and smaller threads as it rises into the page, like a halftone print. When it comes into view, the threads settle in one time.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="weave-row">
+          <div class="band-demo seat">
+            <span class="stitch" aria-hidden="true"></span>
+            <svg class="band insert" preserveAspectRatio="none" aria-hidden="true"><rect width="100%" height="100%" fill="url(#pepita)" /></svg>
+            <span class="stitch" aria-hidden="true"></span>
+          </div>
+          <div class="seat-card">
+            <svg class="insert-v" preserveAspectRatio="none" aria-hidden="true"><rect width="100%" height="100%" fill="url(#pepita)" /></svg>
+            <div>
+              <p class="label">RSVP</p>
+              <p class="seat-title">Will you join us?</p>
+            </div>
+          </div>
+          <figcaption>
+            <p class="label">C. Seat insert</p>
+            <p class="muted small">From the Pepita seats of a classic 911: a narrow insert of very fine graphite houndstooth between two stitched seams. Used sparingly, as a band and as the edge of a card (the RSVP card, for example).</p>
+          </figcaption>
+        </figure>
+
+        <figure class="weave-row">
+          <div class="band-demo contour-demo" tabindex="0">
+            <svg class="contour" viewBox="0 0 320 24" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <g class="c-line">{grid(41, 4).map((t) => pieces.map((d) => <path d={d} transform={`translate(${t.x - 4} ${t.y - 4})`} />))}</g>
+              <g class="c-fill">{grid(41, 4).map((t) => (
+                <g transform={`translate(${t.x - 4} ${t.y - 4})`} style={`--d:${(t.c + t.r) * 16}ms`}>{pieces.map((d) => <path d={d} />)}</g>
+              ))}</g>
+            </svg>
+          </div>
+          <figcaption>
+            <p class="label">D. Drawn</p>
+            <p class="muted small">The tooth as a fine line drawing, like a technical drawing. At rest it is only hairlines. Point at it, and the teeth fill with moss one after the other, left to right.</p>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
     <section class="group" aria-labelledby="g-menu">
       <div class="head">
         <p class="label">Menu</p>
@@ -128,6 +229,47 @@ const links = ['Our Story', 'Schedule', 'Travel', 'FAQ'];
   .head .note { margin: 0; max-width: 44ch; }
   @media (min-width: 900px) { .head { grid-template-columns: 2fr 4fr 6fr; align-items: baseline; } }
   .small { font-size: 0.95rem; margin: 6px 0 0; }
+
+
+  /* ---------- A better houndstooth ---------- */
+  .defs { position: absolute; }
+  .weave-list { display: grid; gap: 56px; }
+  .weave-row { margin: 0; display: grid; gap: 14px; }
+  .weave-row figcaption { max-width: 60ch; }
+  .weave-row figcaption p { margin: 0; }
+  .band-demo { height: 48px; border-top: 1px solid var(--line); }
+  .band-demo.tall { height: 96px; border: 0; }
+  .band { display: block; width: 100%; height: 100%; }
+  .w-bg { fill: #e6decf; }
+  .w-light { stroke: var(--accent); stroke-opacity: 0.16; stroke-width: 0.12; }
+  .w-dark { fill: var(--accent); }
+  .w-sheen { stroke: #fff; stroke-opacity: 0.16; stroke-width: 0.12; }
+  .p-bg { fill: var(--surface); }
+  .p-dark { fill: var(--text); }
+
+  .fade { display: block; width: 100%; height: 100%; fill: var(--accent); }
+  .ft { transform-box: fill-box; transform-origin: center; }
+  .js .fade:not(.in) .ft { opacity: 0; transform: scale(0.3); }
+  .js .fade.in .ft { transition: opacity 0.45s var(--ease) var(--d), transform 0.6s var(--glide) var(--d); }
+
+  .seat { display: grid; grid-template-rows: 1px 24px 1px; gap: 5px; height: auto; border: 0; padding: 8px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .stitch { display: block; height: 1px; background: repeating-linear-gradient(90deg, var(--muted) 0 6px, transparent 6px 10px); opacity: 0.7; }
+  .seat-card { display: grid; grid-template-columns: 14px 1fr; gap: 24px; max-width: 420px; background: var(--surface); border: 1px solid var(--line); padding: 0 24px 0 0; }
+  .insert-v { width: 14px; height: 100%; display: block; border-right: 1px dashed var(--muted); }
+  .seat-card div { padding: 22px 0; }
+  .seat-card p { margin: 0; }
+  .seat-title { font-family: var(--display); font-size: 1.8rem; line-height: 1.1; }
+
+  .contour-demo { height: 64px; outline: none; }
+  .contour { display: block; width: 100%; height: 100%; }
+  .c-line path { fill: none; stroke: var(--text); stroke-opacity: 0.6; stroke-width: 1.2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  .c-fill g { color: var(--bg); fill: currentColor; transition: color 0.35s var(--ease) var(--d); }
+  .c-fill path { stroke: currentColor; stroke-width: 0.6; vector-effect: non-scaling-stroke; }
+  .contour-demo:is(:hover, :focus-visible, .on) .c-fill g { color: var(--accent); }
+  @media (prefers-reduced-motion: reduce) {
+    .js .fade:not(.in) .ft { opacity: 1; transform: none; }
+    .c-fill g { transition: none; }
+  }
 
   /* ---------- Menu links ---------- */
   .menus { display: grid; gap: 0; }
@@ -295,5 +437,15 @@ const links = ['Our Story', 'Schedule', 'Travel', 'FAQ'];
     svg.addEventListener('pointermove', point);
     svg.addEventListener('pointerdown', point);
     svg.addEventListener('pointerleave', () => cells.forEach((c) => (c.style.transform = '')));
+  });
+  // Dissolve: the threads settle in one time when the band comes into view.
+  const fadeIo = new IntersectionObserver((entries) => {
+    for (const e of entries) if (e.isIntersecting) { e.target.classList.add('in'); fadeIo.unobserve(e.target); }
+  }, { threshold: 0.4 });
+  document.querySelectorAll('.fade').forEach((el) => fadeIo.observe(el));
+
+  // Drawn: a tap fills the teeth on touch screens.
+  document.querySelectorAll<HTMLElement>('.contour-demo').forEach((el) => {
+    el.addEventListener('click', () => el.classList.toggle('on'));
   });
 </script>
