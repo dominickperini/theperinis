@@ -44,11 +44,107 @@ const fade = grid(fadeCols, fadeRows).map((t) => {
 
   <div class="wide">
 
+    <section class="group" aria-labelledby="g-glide">
+      <div class="head">
+        <p class="label">Motion</p>
+        <h2 id="g-glide">Glide, everywhere</h2>
+        <p class="muted note">The same rule as the Glide menu line: one element travels from one state to the next, fast at the start and slow at the end, like a car that pulls in. Five places to use it. Pick the ones you like.</p>
+      </div>
+
+      <div class="glide-list">
+        <figure class="glide-row">
+          <div class="g-stage pages-demo">
+            <nav class="g-tabs" aria-label="Demo pages">
+              {['Our Story', 'Schedule', 'Travel'].map((t, i) => (
+                <button type="button" class={i === 0 ? 'on' : ''} data-page={i}>{t}</button>
+              ))}
+              <span class="g-line" aria-hidden="true"></span>
+            </nav>
+            <div class="g-pages">
+              <div class="g-page on"><p class="g-big">Our story</p><p class="muted">We met on October 7, 2022.</p></div>
+              <div class="g-page"><p class="g-big">The weekend</p><p class="muted">Sunday, September 5, 2027.</p></div>
+              <div class="g-page"><p class="g-big">Getting there</p><p class="muted">Dunafon Castle, Indian Hills.</p></div>
+            </div>
+          </div>
+          <figcaption>
+            <p class="label">1. Glide across pages</p>
+            <p class="muted small">When you open another page, the menu line glides to the new link while the new page comes in from the side a little. The line does not jump or redraw. Click the links.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="glide-row">
+          <div class="g-stage field-demo">
+            <label>Your full name<input /></label>
+            <label>Email<input type="email" /></label>
+            <label>A song that will get you dancing<input /></label>
+            <span class="f-line" aria-hidden="true"></span>
+          </div>
+          <figcaption>
+            <p class="label">2. Field glide</p>
+            <p class="muted small">On the RSVP form, one moss line moves from field to field as you go down the form, and settles under the field that you type in. Click a field, or press Tab.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="glide-row">
+          <div class="g-stage scroll-demo marker-demo" tabindex="0">
+            <span class="m-tick" aria-hidden="true"></span>
+            {['The details', 'Our story', 'The weekend', 'Getting there'].map((t) => (
+              <div class="m-sec"><p class="label">Section</p><p class="g-big">{t}</p><p class="muted">Text for this section.</p></div>
+            ))}
+          </div>
+          <figcaption>
+            <p class="label">3. Section marker</p>
+            <p class="muted small">A short tick in the left margin glides down to the section that you read, like the needle of a gauge. Scroll inside the box.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="glide-row">
+          <div class="g-stage faq-demo">
+            <span class="q-line" aria-hidden="true"></span>
+            {[
+              ['What should I wear?', 'Cocktail attire. The ceremony is outside, so bring a layer.'],
+              ['Can I bring a guest?', 'Your invitation shows the number of seats that we saved for you.'],
+              ['Is there parking?', 'Yes, at the castle.'],
+            ].map(([q, a]) => (
+              <details class="q"><summary>{q}</summary><p class="muted">{a}</p></details>
+            ))}
+          </div>
+          <figcaption>
+            <p class="label">4. FAQ marker</p>
+            <p class="muted small">The questions stay plain text. A thin line beside them glides to the question that you point at or open. No boxes.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="glide-row">
+          <div class="g-stage scroll-demo story-demo" tabindex="0">
+            <div class="s-track">
+              <span class="s-rail" aria-hidden="true"></span>
+              <span class="s-dot" aria-hidden="true"></span>
+              {[
+                ['October 7, 2022', 'We met'],
+                ['October 21, 2022', 'We started dating'],
+                ['Thanksgiving 2024', 'Our house in Broomfield'],
+                ['July 10, 2025', 'We got engaged'],
+                ['January 6, 2026', 'Sapporo came home'],
+                ['September 5, 2027', 'We get married'],
+              ].map(([d, t]) => (
+                <div class="s-item"><p class="label">{d}</p><p class="g-big">{t}</p></div>
+              ))}
+            </div>
+          </div>
+          <figcaption>
+            <p class="label">5. Story timeline</p>
+            <p class="muted small">On Our Story, one dot travels along the timeline and stops at the milestone in the middle of the screen. Scroll inside the box.</p>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
     <section class="group" aria-labelledby="g-weave">
       <div class="head">
         <p class="label">Houndstooth</p>
         <h2 id="g-weave">A better houndstooth</h2>
-        <p class="muted note">Now the pattern is a flat tile that repeats. These four versions treat it like the real fabric, or like a precise drawing. Each one is shown as the footer band. Pick one, or tell me what to mix.</p>
+        <p class="muted note">Now the pattern is a flat tile that repeats. These four versions treat it like the real fabric, or like a precise drawing. Each one is shown as the footer band. You picked C, Seat insert. It is now on the footer and the RSVP and save-the-date cards.</p>
       </div>
 
       <svg width="0" height="0" class="defs" aria-hidden="true">
@@ -230,6 +326,70 @@ const fade = grid(fadeCols, fadeRows).map((t) => {
   @media (min-width: 900px) { .head { grid-template-columns: 2fr 4fr 6fr; align-items: baseline; } }
   .small { font-size: 0.95rem; margin: 6px 0 0; }
 
+
+
+  /* ---------- Glide, everywhere ---------- */
+  .glide-list { display: grid; gap: 56px 40px; }
+  @media (min-width: 900px) { .glide-list { grid-template-columns: 1fr 1fr; } }
+  .glide-row { margin: 0; display: grid; gap: 14px; align-content: start; }
+  .glide-row figcaption p { margin: 0; }
+  .g-stage { position: relative; background: var(--surface); border: 1px solid var(--line); padding: 28px; min-height: 240px; }
+  .g-big { font-family: var(--display); font-size: 1.7rem; line-height: 1.1; margin: 0 0 4px; }
+  .g-stage .muted { margin: 0; }
+
+  .g-tabs { position: relative; display: flex; gap: 28px; margin-bottom: 36px; }
+  .g-tabs button {
+    background: none; border: 0; padding: 6px 0; cursor: pointer; color: var(--text);
+    font: inherit; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .g-tabs button.on { font-weight: 500; }
+  .g-line, .f-line {
+    position: absolute; left: 0; top: 0; height: 1px; width: 1px; transform-origin: left; pointer-events: none;
+    transform: translate(var(--gx, 0px), var(--gy, 0px)) scaleX(var(--gw, 0));
+    transition: transform 0.55s var(--glide);
+  }
+  .g-line { background: var(--text); }
+  .g-pages { display: grid; }
+  .g-page { grid-area: 1 / 1; opacity: 0; transform: translateX(var(--from, 24px)); transition: opacity 0.35s var(--ease), transform 0.55s var(--glide); pointer-events: none; }
+  .g-page.on { opacity: 1; transform: none; pointer-events: auto; }
+
+  .field-demo { display: grid; gap: 18px; }
+  .field-demo label { display: grid; gap: 6px; font-weight: 600; font-size: 0.9rem; }
+  .field-demo input { font: inherit; font-weight: 400; padding: 10px 12px; border: 1px solid var(--line); background: var(--bg); outline: none; }
+  .f-line { height: 2px; background: var(--accent); }
+
+  .scroll-demo { height: 260px; min-height: 0; overflow-y: auto; outline: none; }
+  .m-tick {
+    position: absolute; left: 10px; top: 0; width: 1px; height: 28px; background: var(--accent);
+    transform: translateY(var(--my, 28px)); transition: transform 0.55s var(--glide);
+  }
+  .marker-demo { padding-left: 32px; }
+  .m-sec { padding: 6px 0 90px; }
+  .m-sec .label { margin: 0 0 4px; }
+
+  .faq-demo { padding-left: 40px; }
+  .q { border-bottom: 1px solid var(--line); }
+  .q summary { list-style: none; cursor: pointer; padding: 14px 0; font-size: 1.05rem; }
+  .q summary::-webkit-details-marker { display: none; }
+  .q p { padding: 0 0 14px; }
+  .q-line {
+    position: absolute; left: 22px; top: 0; width: 1px; height: 1px; background: var(--accent); transform-origin: top;
+    transform: translateY(var(--qy, 0px)) scaleY(var(--qh, 0)); transition: transform 0.55s var(--glide);
+  }
+
+  .story-demo { padding: 0; }
+  .s-track { position: relative; padding: 110px 28px 110px 64px; }
+  .s-rail { position: absolute; left: 36px; top: 0; bottom: 0; width: 1px; background: var(--line); }
+  .s-dot {
+    position: absolute; left: 32px; top: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--accent);
+    transform: translateY(var(--sy, 110px)); transition: transform 0.55s var(--glide);
+  }
+  .s-item { padding: 0 0 44px; opacity: 0.45; transition: opacity 0.4s var(--ease); }
+  .s-item.on { opacity: 1; }
+  .s-item .label { margin: 0 0 2px; }
+  @media (prefers-reduced-motion: reduce) {
+    .g-line, .f-line, .m-tick, .q-line, .s-dot, .g-page { transition: none; }
+  }
 
   /* ---------- A better houndstooth ---------- */
   .defs { position: absolute; }
@@ -448,4 +608,94 @@ const fade = grid(fadeCols, fadeRows).map((t) => {
   document.querySelectorAll<HTMLElement>('.contour-demo').forEach((el) => {
     el.addEventListener('click', () => el.classList.toggle('on'));
   });
+  // ---------- Glide, everywhere ----------
+  // 1. Pages: the line glides to the new link and the new page slides in a little.
+  document.querySelectorAll<HTMLElement>('.pages-demo').forEach((demo) => {
+    const tabs = [...demo.querySelectorAll<HTMLButtonElement>('.g-tabs button')];
+    const line = demo.querySelector<HTMLElement>('.g-line')!;
+    const pages = [...demo.querySelectorAll<HTMLElement>('.g-page')];
+    let cur = 0;
+    const place = (b: HTMLElement) => {
+      line.style.setProperty('--gx', `${b.offsetLeft}px`);
+      line.style.setProperty('--gy', `${b.offsetTop + b.offsetHeight - 1}px`);
+      line.style.setProperty('--gw', String(b.offsetWidth));
+    };
+    place(tabs[0]);
+    tabs.forEach((b, i) => b.addEventListener('click', () => {
+      if (i === cur) return;
+      const dir = i > cur ? 1 : -1;
+      pages[i].style.setProperty('--from', `${24 * dir}px`);
+      pages[cur].style.setProperty('--from', `${-24 * dir}px`);
+      tabs[cur].classList.remove('on'); pages[cur].classList.remove('on');
+      tabs[i].classList.add('on'); pages[i].classList.add('on');
+      cur = i;
+      place(b);
+    }));
+    window.addEventListener('resize', () => place(tabs[cur]));
+  });
+
+  // 2. Field glide: one line moves to the field in focus.
+  document.querySelectorAll<HTMLElement>('.field-demo').forEach((demo) => {
+    const line = demo.querySelector<HTMLElement>('.f-line')!;
+    const inputs = [...demo.querySelectorAll<HTMLInputElement>('input')];
+    const place = (el: HTMLElement | null) => {
+      if (!el) { line.style.setProperty('--gw', '0'); return; }
+      line.style.setProperty('--gx', `${el.offsetLeft}px`);
+      line.style.setProperty('--gy', `${el.offsetTop + el.offsetHeight - 2}px`);
+      line.style.setProperty('--gw', String(el.offsetWidth));
+    };
+    inputs.forEach((i) => i.addEventListener('focus', () => place(i)));
+    demo.addEventListener('focusout', (e) => { if (!demo.contains(e.relatedTarget as Node)) place(null); });
+  });
+
+  // 3. Section marker: the tick glides to the section that is in view.
+  document.querySelectorAll<HTMLElement>('.marker-demo').forEach((box) => {
+    const tick = box.querySelector<HTMLElement>('.m-tick')!;
+    const secs = [...box.querySelectorAll<HTMLElement>('.m-sec')];
+    const update = () => {
+      const mid = box.scrollTop + box.clientHeight * 0.35;
+      let best = secs[0];
+      for (const s of secs) if (s.offsetTop <= mid) best = s;
+      tick.style.setProperty('--my', `${best.offsetTop + 6}px`);
+    };
+    box.addEventListener('scroll', update, { passive: true });
+    update();
+  });
+
+  // 4. FAQ marker: the line glides to the question you point at, or the open one.
+  document.querySelectorAll<HTMLElement>('.faq-demo').forEach((demo) => {
+    const line = demo.querySelector<HTMLElement>('.q-line')!;
+    const qs = [...demo.querySelectorAll<HTMLDetailsElement>('.q')];
+    const place = (q?: HTMLElement) => {
+      if (!q) { line.style.setProperty('--qh', '0'); return; }
+      line.style.setProperty('--qy', `${q.offsetTop + 10}px`);
+      line.style.setProperty('--qh', String(q.offsetHeight - 20));
+    };
+    const rest = () => place(qs.find((q) => q.open));
+    qs.forEach((q) => {
+      q.addEventListener('pointerenter', () => place(q));
+      q.addEventListener('toggle', () => requestAnimationFrame(() => place(q.open ? q : qs.find((x) => x.open))));
+    });
+    demo.addEventListener('pointerleave', rest);
+  });
+
+  // 5. Story timeline: the dot stops at the milestone in the middle of the box.
+  document.querySelectorAll<HTMLElement>('.story-demo').forEach((box) => {
+    const dot = box.querySelector<HTMLElement>('.s-dot')!;
+    const items = [...box.querySelectorAll<HTMLElement>('.s-item')];
+    const update = () => {
+      const mid = box.scrollTop + box.clientHeight / 2;
+      let best = items[0];
+      let d = Infinity;
+      for (const it of items) {
+        const c = it.offsetTop + 10;
+        if (Math.abs(c - mid) < d) { d = Math.abs(c - mid); best = it; }
+      }
+      items.forEach((it) => it.classList.toggle('on', it === best));
+      dot.style.setProperty('--sy', `${best.offsetTop + 4}px`);
+    };
+    box.addEventListener('scroll', update, { passive: true });
+    update();
+  });
 </script>
+
