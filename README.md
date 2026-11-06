@@ -23,9 +23,11 @@ Then open http://localhost:4321. On your computer, RSVPs stay in memory only.
 Open `https://theperinis.net/admin` and log in with the `ADMIN_KEY` value.
 
 - **Add guests:** Paste one invitation on each line: `name, email, list, seats`. The list is `A` or `B`.
-  Each invitation gets a 6-character code and its own RSVP link.
-- **Send invitations:** Send each guest their link (or print the code on the invitation). Then select the
-  invitations and click **Mark selected as sent**. Only sent invitations can RSVP.
+  Put the last name of each person in the party name (for example `John Smith and Jane Lee`), because guests
+  find their invitation by last name.
+- **Send invitations:** Select the invitations and click **Mark selected as sent**. Only sent invitations can
+  RSVP. Guests go to `/rsvp`, type their last name, and select their party. Each invitation also has its own
+  RSVP link, which you can send if you want.
 - **Backfill from the B list:** An invitation holds all its seats until the guests reply. A "no" frees all
   seats, and a "yes" for fewer people frees the rest. **Invite next** shows the next B-list invitations, in the
   order you added them, that fit in the open seats.

@@ -40,6 +40,31 @@ export async function getParty(code: string): Promise<Party | null> {
   return getItem<Party>(PARTIES, normalizeCode(code));
 }
 
+// Lower case, no accents, and only letters and spaces. "O'Brien-Núñez" -> "obrien nunez".
+export const normalizeName = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/['’]/g, '')
+    .replace(/[^a-z]+/g, ' ')
+    .trim();
+
+/**
+ * Invited parties that have the last name as a full word in the party name.
+ * A part of a word does not match ("Lee" does not find "Leeson"), so a search
+ * shows only the parties of that family.
+ */
+export async function findParties(lastName: string): Promise<Party[]> {
+  const q = normalizeName(lastName);
+  if (q.length < 2) return [];
+  const parties = await listParties();
+  return parties
+    .filter((p) => p.status !== 'not_invited' && ` ${normalizeName(p.name)} `.includes(` ${q} `))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, 20);
+}
+
 export async function saveParty(party: Party): Promise<void> {
   await setItem(PARTIES, party.code, party);
 }
