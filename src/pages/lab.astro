@@ -48,7 +48,7 @@ const fade = grid(fadeCols, fadeRows).map((t) => {
       <div class="head">
         <p class="label">Motion</p>
         <h2 id="g-glide">Glide, everywhere</h2>
-        <p class="muted note">The same rule as the Glide menu line: one element travels from one state to the next, fast at the start and slow at the end, like a car that pulls in. Five places to use it. Pick the ones you like.</p>
+        <p class="muted note">The same rule as the Glide menu line: one element travels from one state to the next, fast at the start and slow at the end, like a car that pulls in. The line always moves along its own direction. Four places to use it. Pick the ones you like.</p>
       </div>
 
       <div class="glide-list">
@@ -73,19 +73,6 @@ const fade = grid(fadeCols, fadeRows).map((t) => {
         </figure>
 
         <figure class="glide-row">
-          <div class="g-stage field-demo">
-            <label>Your full name<input /></label>
-            <label>Email<input type="email" /></label>
-            <label>A song that will get you dancing<input /></label>
-            <span class="f-line" aria-hidden="true"></span>
-          </div>
-          <figcaption>
-            <p class="label">2. Field glide</p>
-            <p class="muted small">On the RSVP form, one moss line moves from field to field as you go down the form, and settles under the field that you type in. Click a field, or press Tab.</p>
-          </figcaption>
-        </figure>
-
-        <figure class="glide-row">
           <div class="g-stage scroll-demo marker-demo" tabindex="0">
             <span class="m-tick" aria-hidden="true"></span>
             {['The details', 'Our story', 'The weekend', 'Getting there'].map((t) => (
@@ -93,7 +80,7 @@ const fade = grid(fadeCols, fadeRows).map((t) => {
             ))}
           </div>
           <figcaption>
-            <p class="label">3. Section marker</p>
+            <p class="label">2. Section marker</p>
             <p class="muted small">A short tick in the left margin glides down to the section that you read, like the needle of a gauge. Scroll inside the box.</p>
           </figcaption>
         </figure>
@@ -110,7 +97,7 @@ const fade = grid(fadeCols, fadeRows).map((t) => {
             ))}
           </div>
           <figcaption>
-            <p class="label">4. FAQ marker</p>
+            <p class="label">3. FAQ marker</p>
             <p class="muted small">The questions stay plain text. A thin line beside them glides to the question that you point at or open. No boxes.</p>
           </figcaption>
         </figure>
@@ -133,7 +120,7 @@ const fade = grid(fadeCols, fadeRows).map((t) => {
             </div>
           </div>
           <figcaption>
-            <p class="label">5. Story timeline</p>
+            <p class="label">4. Story timeline</p>
             <p class="muted small">On Our Story, one dot travels along the timeline and stops at the milestone in the middle of the screen. Scroll inside the box.</p>
           </figcaption>
         </figure>
