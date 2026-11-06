@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Photo from '../components/Photo.astro';
 import { story } from '../data/wedding';
-import { storyPhotos } from '../data/media';
+import { storyPhotos, gallery } from '../data/media';
 ---
 
 <Layout title="Our Story">
@@ -10,58 +10,101 @@ import { storyPhotos } from '../data/media';
     <div class="page-title">
       <p class="eyebrow">Our Story</p>
       <h1>How we got here</h1>
-      <p>Swipe or scroll to the side.</p>
     </div>
   </div>
 
-  <!-- The story as a film strip: one photo and one field note for each milestone. -->
-  <div class="strip-wrap">
-    <ol class="strip" tabindex="0" aria-label="Our story, oldest first">
+  <!-- A timeline. One dot travels along the line and stops at the milestone in the middle of the screen. -->
+  <div class="wide">
+    <ol class="timeline" aria-label="Our story, oldest first">
+      <span class="rail" aria-hidden="true"></span>
+      <span class="dot" aria-hidden="true"></span>
       {
         story.map((item, i) => (
-          <li class="frame-item ruled reveal" style={`--delay: ${Math.min(i, 4) * 0.08}s`}>
+          <li class="stop">
+            <div class="words">
+              <p class="label">{item.date}</p>
+              <h2>{item.title}</h2>
+              {item.text && <p class="muted">{item.text}</p>}
+            </div>
             <Photo
-              media={{ ...storyPhotos[i % storyPhotos.length], note: item.date }}
-              index={i + 1}
+              media={storyPhotos[i % storyPhotos.length]}
               ratio="4 / 5"
               class="reveal"
-              sizes="(min-width: 900px) 30vw, 78vw"
+              sizes="(min-width: 900px) 40vw, 85vw"
             />
-            <h3>{item.title}</h3>
-            {item.text && <p class="muted">{item.text}</p>}
           </li>
         ))
       }
     </ol>
   </div>
+
+  <section class="wide album" aria-labelledby="album-title">
+    <header class="album-head ruled">
+      <p class="label">Field notes</p>
+      <h2 id="album-title">Along the way</h2>
+    </header>
+    <div class="album-grid">
+      {gallery.map((m) => <Photo media={m} class="reveal" sizes="(min-width: 900px) 25vw, 50vw" />)}
+    </div>
+  </section>
 </Layout>
 
 <style>
-  .strip-wrap { position: relative; }
-  .strip {
-    list-style: none;
-    margin: 0;
-    padding: 0 var(--gutter) 24px;
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: min(78vw, 380px);
-    gap: clamp(20px, 3vw, 40px);
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-padding: 0 var(--gutter);
-    overscroll-behavior-x: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--text) transparent;
+  .timeline { position: relative; list-style: none; margin: 0; padding: 0 0 0 48px; display: grid; gap: clamp(56px, 9vw, 120px); }
+  .rail { position: absolute; left: 12px; top: 0; bottom: 0; width: 1px; background: var(--line); }
+  .dot {
+    position: absolute; left: 8px; top: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--accent);
+    transform: translateY(var(--y, 0px)); transition: transform 0.6s var(--glide);
   }
-  .strip:focus-visible { outline-offset: -2px; }
-  .frame-item { scroll-snap-align: start; padding-top: 14px; }
-  .frame-item :global(.photo) { margin-bottom: 18px; }
-  .frame-item :global(figcaption) { order: -1; margin: 0 0 12px; }
-  .frame-item :global(.photo) { display: flex; flex-direction: column; }
-  .frame-item h3 { margin: 0 0 6px; }
-  .frame-item p { margin: 0; font-size: 1.05rem; }
-  /* Every second frame sits lower, like prints on a table. */
-  @media (min-width: 720px) {
-    .frame-item:nth-child(even) { margin-top: 64px; }
+  .stop { display: grid; gap: 20px; }
+  .words { transition: opacity 0.4s var(--ease); }
+  .js .stop:not(.on) .words { opacity: 0.45; }
+  .words .label { margin: 0 0 6px; }
+  .words h2 { margin: 0 0 8px; font-size: clamp(1.8rem, 3.4vw, 2.8rem); line-height: 1.05; }
+  .words p.muted { margin: 0; max-width: 40ch; }
+  @media (min-width: 900px) {
+    .timeline { padding-left: 72px; }
+    .rail { left: 20px; }
+    .dot { left: 16px; }
+    .stop { grid-template-columns: 5fr 6fr; gap: 48px; align-items: start; }
+    .stop :global(.photo) { max-width: 420px; }
   }
+  @media (prefers-reduced-motion: reduce) { .dot { transition: none; } }
+
+  .album { margin-top: clamp(96px, 14vw, 180px); }
+  .album-head { margin-bottom: 32px; }
+  .album-head h2 { margin: 4px 0 0; }
+  .album-grid { columns: 2 160px; column-gap: 16px; }
+  @media (min-width: 900px) { .album-grid { columns: 4; column-gap: 24px; } }
+  .album-grid :global(.photo) { break-inside: avoid; margin: 0 0 16px; }
+  @media (min-width: 900px) { .album-grid :global(.photo) { margin-bottom: 24px; } }
 </style>
+
+<script>
+  // The dot stops at the milestone nearest to the middle of the screen.
+  const list = document.querySelector<HTMLElement>('.timeline');
+  const dot = list?.querySelector<HTMLElement>('.dot');
+  const stops = [...(list?.querySelectorAll<HTMLElement>('.stop') ?? [])];
+  if (list && dot && stops.length) {
+    let frame = 0;
+    const update = () => {
+      const mid = window.innerHeight / 2;
+      let best = stops[0];
+      let d = Infinity;
+      for (const s of stops) {
+        const label = s.querySelector<HTMLElement>('.label') ?? s;
+        const r = label.getBoundingClientRect();
+        const dist = Math.abs(r.top + r.height / 2 - mid);
+        if (dist < d) { d = dist; best = s; }
+      }
+      stops.forEach((s) => s.classList.toggle('on', s === best));
+      const label = best.querySelector<HTMLElement>('.label') ?? best;
+      const y = label.getBoundingClientRect().top - list.getBoundingClientRect().top + label.offsetHeight / 2 - 4.5;
+      dot.style.setProperty('--y', `${y.toFixed(1)}px`);
+    };
+    const queue = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(update); };
+    window.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('resize', queue);
+    update();
+  }
+</script>

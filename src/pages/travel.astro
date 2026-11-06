@@ -10,18 +10,18 @@ import { travel, wedding } from '../data/wedding';
       <h1>Getting there</h1>
     </div>
 
-    <section class="card">
+    <section class="card" data-section>
       <h2>The venue</h2>
       <p><strong>{wedding.venue.name}</strong><br />{wedding.venue.address}</p>
       {wedding.venue.mapUrl && <a href={wedding.venue.mapUrl} target="_blank" rel="noopener">Open the map</a>}
     </section>
 
-    <section class="card">
+    <section class="card" data-section>
       <h2>Airports</h2>
       <ul>{travel.airports.map((a) => <li><strong>{a.name}</strong>: {a.note}</li>)}</ul>
     </section>
 
-    <section class="card">
+    <section class="card" data-section>
       <h2>Hotels</h2>
       {
         travel.hotels.map((h) => (
@@ -34,12 +34,12 @@ import { travel, wedding } from '../data/wedding';
       }
     </section>
 
-    <section class="card">
+    <section class="card" data-section>
       <h2>Getting around</h2>
       <p>{travel.gettingAround}</p>
     </section>
 
-    <section class="card">
+    <section class="card" data-section>
       <h2>Things to do</h2>
       <ul>{travel.thingsToDo.map((t) => <li>{t}</li>)}</ul>
     </section>

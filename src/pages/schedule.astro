@@ -11,7 +11,7 @@ import { schedule } from '../data/wedding';
     </div>
     {
       schedule.map((day) => (
-        <section class="day">
+        <section class="day" data-section>
           <h2>{day.day}</h2>
           {day.events.map((event) => (
             <div class="card event">
