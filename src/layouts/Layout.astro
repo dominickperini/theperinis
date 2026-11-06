@@ -225,43 +225,68 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   if (navEl && glider) {
     const items = [...navEl.querySelectorAll<HTMLAnchorElement>('a')];
     const home = items.find((a) => a.getAttribute('aria-current') === 'page');
-    const to = (a?: HTMLElement) => {
+    // `at` is the link where the line is now. On a click we save it, so that the
+    // next page starts the line at the same place on screen. With a mouse that is
+    // the clicked link already, so the line does not jump back and glide again.
+    let at: HTMLAnchorElement | undefined;
+    const to = (a?: HTMLAnchorElement) => {
+      at = a;
       glider.style.setProperty('--gx', `${a ? a.offsetLeft : 0}px`);
       glider.style.setProperty('--gw', String(a ? a.offsetWidth : 0));
     };
-    // Glide across pages: when you came here from a menu link, the line starts
-    // under the old link and glides to the new one, and the page comes in a
-    // little from the side of travel.
-    let from: HTMLAnchorElement | undefined;
+    const place = (a?: HTMLAnchorElement) => {
+      glider.classList.add('instant');
+      to(a);
+      void glider.offsetWidth; // apply the start position before the transition comes back
+      glider.classList.remove('instant');
+    };
+    const byHref = (h: string | null) => items.find((a) => a.getAttribute('href') === h);
+    // Glide across pages: the page comes in a little from the side of travel.
+    let line: HTMLAnchorElement | undefined;
+    let page: HTMLAnchorElement | undefined;
     try {
-      const prev = sessionStorage.getItem('glide-from');
+      line = byHref(sessionStorage.getItem('glide-line'));
+      page = byHref(sessionStorage.getItem('glide-from'));
+      sessionStorage.removeItem('glide-line');
       sessionStorage.removeItem('glide-from');
-      from = items.find((a) => a.getAttribute('href') === prev);
     } catch { /* storage can be off */ }
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    glider.classList.add('instant');
-    to(from && !still ? from : home);
-    if (from && home && from !== home && !still && wide.matches) {
-      const dir = items.indexOf(home) > items.indexOf(from) ? 1 : -1;
+    if (page && home && page !== home && !still && wide.matches) {
+      const dir = items.indexOf(home) > items.indexOf(page) ? 1 : -1;
       document.querySelector('main')?.style.setProperty('--enter', `${dir * 18}px`);
       document.documentElement.classList.add('page-enter');
     }
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      glider.classList.remove('instant');
-      to(home);
-    }));
+    // Wait for the fonts, so that the link sizes do not change during the glide.
+    glider.style.visibility = 'hidden';
+    const fonts = document.fonts?.ready ?? Promise.resolve();
+    fonts.then(() => {
+      const hovered = items.find((a) => a.matches(':hover'));
+      place(line && !still ? line : home);
+      glider.style.visibility = '';
+      requestAnimationFrame(() => to(hovered ?? home));
+    });
     items.forEach((a) => a.addEventListener('click', () => {
-      const cur = home?.getAttribute('href');
-      try { if (cur) sessionStorage.setItem('glide-from', cur); } catch { /* storage can be off */ }
+      try {
+        const cur = home?.getAttribute('href');
+        if (cur) sessionStorage.setItem('glide-from', cur);
+        const h = (at ?? home)?.getAttribute('href');
+        if (h) sessionStorage.setItem('glide-line', h);
+      } catch { /* storage can be off */ }
     }));
+    // Back and Forward can show the page from the cache, with the line still
+    // under the link that was clicked. Put it back under this page, with no motion.
+    window.addEventListener('pageshow', (e) => {
+      if (!e.persisted) return;
+      document.documentElement.classList.remove('page-enter');
+      place(home);
+    });
     items.forEach((a) => {
       a.addEventListener('pointerenter', () => to(a));
       a.addEventListener('focus', () => to(a));
     });
     navEl.addEventListener('pointerleave', () => to(home));
     navEl.addEventListener('focusout', (e) => { if (!navEl.contains(e.relatedTarget as Node)) to(home); });
-    window.addEventListener('resize', () => to(home));
-    document.fonts?.ready.then(() => to(home));
+    window.addEventListener('resize', () => place(home));
   }
 
   // Section marker: a short vertical tick in the left margin glides down (along its
