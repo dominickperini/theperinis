@@ -51,6 +51,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
                 </a>
               ))
             }
+            <span class="glider" aria-hidden="true"></span>
           </nav>
         </details>
       </div>
@@ -61,7 +62,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     </main>
 
     <footer class="site-footer">
-      <div class="footer-band" aria-hidden="true"></div>
+      <div class="footer-band seat-insert" aria-hidden="true"></div>
       <p class="footer-names">{wedding.couple.first} <em>&amp;</em> {wedding.couple.second}</p>
       <p class="eyebrow">{wedding.date}</p>
       {wedding.hashtag && <p class="muted">{wedding.hashtag}</p>}
@@ -166,21 +167,29 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     }
     .menu nav a:hover::after,
     .menu nav a[aria-current='page']::after { transform: scaleX(1); transform-origin: left; }
+
+    /* Glide: with the script, one line glides from link to link, like a car that
+       pulls in, and goes back to the current page when the pointer leaves. */
+    .menu nav { position: relative; }
+    :global(.js) .menu nav a::after { display: none; }
+    .glider {
+      position: absolute; left: 0; bottom: 0; height: 1px; width: 1px;
+      background: var(--text); transform-origin: left; pointer-events: none;
+      transform: translateX(var(--gx, 0px)) scaleX(var(--gw, 0));
+      transition: transform 0.55s var(--glide);
+    }
+    .glider.instant { transition: none; }
   }
+  .glider { display: none; }
+  @media (min-width: 820px) { :global(.js) .glider { display: block; } }
+  @media (prefers-reduced-motion: reduce) { .glider { transition: none; } }
 
   .site-footer {
     text-align: center;
     padding: 0 20px 48px;
     color: var(--muted);
   }
-  .footer-band {
-    height: 28px;
-    margin: 0 -20px 44px;
-    background: var(--houndstooth) 0 0 / 12px 12px;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
-    opacity: 0.55;
-  }
+  .footer-band { margin: 0 -20px 44px; }
   .footer-names {
     font-family: var(--display);
     font-weight: 400;
@@ -199,6 +208,29 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   const sync = () => { if (menu) menu.open = wide.matches; };
   sync();
   wide.addEventListener('change', sync);
+
+  // Glide: one line moves to the link under the pointer, then back to the current page.
+  const navEl = document.querySelector<HTMLElement>('.menu nav');
+  const glider = navEl?.querySelector<HTMLElement>('.glider');
+  if (navEl && glider) {
+    const items = [...navEl.querySelectorAll<HTMLAnchorElement>('a')];
+    const home = items.find((a) => a.getAttribute('aria-current') === 'page');
+    const to = (a?: HTMLElement) => {
+      glider.style.setProperty('--gx', `${a ? a.offsetLeft : 0}px`);
+      glider.style.setProperty('--gw', String(a ? a.offsetWidth : 0));
+    };
+    glider.classList.add('instant');
+    to(home);
+    requestAnimationFrame(() => requestAnimationFrame(() => glider.classList.remove('instant')));
+    items.forEach((a) => {
+      a.addEventListener('pointerenter', () => to(a));
+      a.addEventListener('focus', () => to(a));
+    });
+    navEl.addEventListener('pointerleave', () => to(home));
+    navEl.addEventListener('focusout', (e) => { if (!navEl.contains(e.relatedTarget as Node)) to(home); });
+    window.addEventListener('resize', () => to(home));
+    document.fonts?.ready.then(() => to(home));
+  }
 
   // Show a hairline under the header after the page scrolls.
   const header = document.querySelector('.site-header');

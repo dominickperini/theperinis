@@ -145,6 +145,39 @@ main { padding: 48px 0 112px; }
 
 .serif { font-family: var(--serif); }
 
+/*
+  Seat insert: the houndstooth is used like the Pepita insert of a 911 seat.
+  A narrow strip of the pattern between stitched seams. Use it in two places
+  only: the footer band and the edge of the RSVP and save-the-date cards.
+*/
+.seat-insert {
+  --seam: repeating-linear-gradient(90deg, var(--muted) 0 5px, transparent 5px 9px);
+  height: 40px;
+  background:
+    var(--seam) 0 0 / 100% 1px no-repeat,
+    var(--seam) 0 100% / 100% 1px no-repeat,
+    linear-gradient(var(--bg), var(--bg)) 0 1px / 100% 6px no-repeat,
+    linear-gradient(var(--bg), var(--bg)) 0 calc(100% - 1px) / 100% 6px no-repeat,
+    var(--houndstooth) 0 4px / 12px 12px;
+  opacity: 0.85;
+}
+.card.seated { position: relative; padding-left: calc(28px + 18px); }
+.card.seated::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  left: -1px;
+  width: 18px;
+  --seam: repeating-linear-gradient(180deg, var(--muted) 0 5px, transparent 5px 9px);
+  background:
+    var(--seam) 100% 0 / 1px 100% no-repeat,
+    linear-gradient(var(--surface), var(--surface)) calc(100% - 1px) 0 / 4px 100% no-repeat,
+    var(--houndstooth) 0 0 / 8px 8px;
+  opacity: 0.85;
+}
+@media (max-width: 520px) { .card.seated { padding-left: calc(20px + 12px); } .card.seated::before { width: 12px; } }
+
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
