@@ -1,0 +1,143 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Faq from '../components/Faq.astro';
+import { schedule, travel, wedding, registry } from '../data/wedding';
+
+// One page for everything a guest needs. Each part has its own anchor, so
+// old links (/schedule, /travel, /registry, /faq) go to the correct place.
+const parts = [
+  { id: 'schedule', title: 'Schedule' },
+  { id: 'travel', title: 'Travel' },
+  { id: 'registry', title: 'Registry' },
+  { id: 'faq', title: 'Questions' },
+];
+---
+
+<Layout title="Details">
+  <div class="container">
+    <div class="page-title">
+      <p class="eyebrow">The details</p>
+      <h1>The weekend</h1>
+    </div>
+
+    <nav class="jump" aria-label="On this page">
+      {parts.map((p, i) => <a href={`#${p.id}`}><span class="label">{String(i + 1).padStart(2, '0')}</span> {p.title}</a>)}
+    </nav>
+
+    <section class="part" id="schedule" aria-labelledby="schedule-title">
+      <header class="part-head ruled reveal">
+        <p class="label">§ 01</p>
+        <h2 id="schedule-title">Schedule</h2>
+      </header>
+      {
+        schedule.map((day) => (
+          <div class="day">
+            <h3 class="day-name">{day.day}</h3>
+            {day.events.map((event) => (
+              <div class="card event">
+                <p class="time">{event.time}</p>
+                <div>
+                  <h4>{event.name}</h4>
+                  {event.place && <p class="muted">{event.place}</p>}
+                  {event.details && <p>{event.details}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        ))
+      }
+    </section>
+
+    <section class="part" id="travel" aria-labelledby="travel-title">
+      <header class="part-head ruled reveal">
+        <p class="label">§ 02</p>
+        <h2 id="travel-title">Travel</h2>
+      </header>
+      <div class="card">
+        <h3>The venue</h3>
+        <p><strong>{wedding.venue.name}</strong><br />{wedding.venue.address}</p>
+        {wedding.venue.mapUrl && <a href={wedding.venue.mapUrl} target="_blank" rel="noopener">Open the map</a>}
+      </div>
+      <div class="card">
+        <h3>Airports</h3>
+        <ul>{travel.airports.map((a) => <li><strong>{a.name}</strong>: {a.note}</li>)}</ul>
+      </div>
+      <div class="card">
+        <h3>Hotels</h3>
+        {
+          travel.hotels.map((h) => (
+            <div class="hotel">
+              <h4>{h.url ? <a href={h.url} target="_blank" rel="noopener">{h.name}</a> : h.name}</h4>
+              <p class="muted">{h.address}</p>
+              <p>{h.note}</p>
+            </div>
+          ))
+        }
+      </div>
+      <div class="card">
+        <h3>Getting around</h3>
+        <p>{travel.gettingAround}</p>
+      </div>
+      <div class="card">
+        <h3>Things to do</h3>
+        <ul>{travel.thingsToDo.map((t) => <li>{t}</li>)}</ul>
+      </div>
+    </section>
+
+    <section class="part" id="registry" aria-labelledby="registry-title">
+      <header class="part-head ruled reveal">
+        <p class="label">§ 03</p>
+        <h2 id="registry-title">Registry</h2>
+      </header>
+      <p class="intro">{registry.intro}</p>
+      <div class="stores">
+        {
+          registry.links.map((r) =>
+            r.url ? (
+              <a class="button" href={r.url} target="_blank" rel="noopener">{r.name}</a>
+            ) : (
+              <span class="card">{r.name}</span>
+            ),
+          )
+        }
+      </div>
+    </section>
+
+    <section class="part" id="faq" aria-labelledby="faq-title">
+      <header class="part-head ruled reveal">
+        <p class="label">§ 04</p>
+        <h2 id="faq-title">Questions</h2>
+      </header>
+      <Faq />
+    </section>
+  </div>
+</Layout>
+
+<style>
+  :global(html) { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { :global(html) { scroll-behavior: auto; } }
+
+  .jump { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 28px; margin: -24px 0 24px; }
+  .jump a { text-decoration: none; color: var(--text); }
+  .jump .label { color: var(--muted); margin-right: 4px; }
+
+  .part { padding-top: clamp(56px, 8vw, 96px); scroll-margin-top: 48px; }
+  .part-head { display: flex; align-items: baseline; gap: 20px; padding-top: 18px; margin-bottom: 28px; }
+  .part-head h2 { margin: 0; }
+  .part-head .label { margin: 0; }
+
+  .day { margin-bottom: 32px; }
+  .day-name { color: var(--muted); font-size: 1rem; font-weight: 400; margin: 0 0 12px; }
+  .event { display: grid; grid-template-columns: 110px 1fr; gap: 16px; }
+  .event h4, .hotel h4 { margin: 0 0 2px; font-size: 1.15rem; font-weight: 500; }
+  .event p { margin: 0; }
+  .time { font-family: var(--mono); font-size: 0.9rem; letter-spacing: 0.04em; color: var(--accent); padding-top: 4px; font-variant-numeric: tabular-nums; }
+  @media (max-width: 520px) { .event { grid-template-columns: 1fr; gap: 4px; } }
+
+  .card p:last-child, .card ul { margin-bottom: 0; }
+  .hotel + .hotel { border-top: 1px solid var(--line); padding-top: 16px; }
+
+  .intro { max-width: 520px; margin: 0 0 24px; }
+  .stores { display: flex; flex-wrap: wrap; gap: 16px; }
+  .stores .card { margin: 0; }
+</style>

@@ -89,10 +89,7 @@ const byNumber = (n: number) => library[n - 1];
 
 export const hero: Media = { ...byNumber(12), note: 'July 2025' };
 
-// Photos for the "Field notes" section on the home page, in order.
-export const fieldNotes: Media[] = [39, 54, 5, 43, 51].map(byNumber);
-
-// One photo for each milestone on the Our Story page, in the same order as
+// One photo for each milestone in the story timeline on the home page, in the same order as
 // `story` in wedding.ts. Use null for a milestone with no photo.
 export const storyPhotos: (Media | null)[] = [null, 8, 6, 36, 34, 10].map((n) => (n ? byNumber(n) : null));
 

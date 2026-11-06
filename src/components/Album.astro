@@ -1,0 +1,15 @@
+---
+import Photo from './Photo.astro';
+import { gallery } from '../data/media';
+---
+
+<div class="album-grid">
+  {gallery.map((m) => <Photo media={m} class="reveal" sizes="(min-width: 900px) 25vw, 50vw" />)}
+</div>
+
+<style>
+  .album-grid { columns: 2 160px; column-gap: 16px; }
+  @media (min-width: 900px) { .album-grid { columns: 4; column-gap: 24px; } }
+  .album-grid :global(.photo) { break-inside: avoid; margin: 0 0 16px; }
+  @media (min-width: 900px) { .album-grid :global(.photo) { margin-bottom: 24px; } }
+</style>
