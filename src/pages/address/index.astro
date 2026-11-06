@@ -1,0 +1,186 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { wedding } from '../../data/wedding';
+import { findParties, getParty, normalizeCode, type Party } from '../../lib/guests';
+import { getAddress } from '../../lib/addresses';
+
+export const prerender = false;
+
+// Save-the-date address form. Same steps as the RSVP: last name, then party,
+// then the form. A link with ?code= opens the form for that party directly.
+const code = normalizeCode(Astro.url.searchParams.get('code') ?? '');
+const last = (Astro.url.searchParams.get('last') ?? '').trim().slice(0, 60);
+const errorCode = Astro.url.searchParams.get('error');
+
+let party: Party | null = null;
+let hasAddress = false;
+let matches: Party[] = [];
+let lookupFailed = false;
+try {
+  if (code) {
+    party = await getParty(code);
+    // Do not show the saved address: anybody can search a last name.
+    if (party) hasAddress = !!(await getAddress(party.code));
+  } else if (last) {
+    matches = await findParties(last, { anyStatus: true });
+  }
+} catch (err) {
+  console.error('Could not read the guest list', err);
+  lookupFailed = true;
+}
+const searched = !code && !!last && !lookupFailed;
+
+const messages: Record<string, string> = {
+  name: 'Please type the name to put on the envelope.',
+  email: 'Please type a correct email address, or leave it empty.',
+  address: 'Please type your street address, city, and ZIP code.',
+  code: 'We cannot find your name. Please search for your last name again.',
+  server: 'We could not save your address. Please try again, or send us an email.',
+};
+let error = errorCode ? (messages[errorCode] ?? messages.server) : '';
+if (!error && lookupFailed) error = messages.server;
+else if (!error && code && !party) error = messages.code;
+const contact = wedding.contactEmail && !wedding.contactEmail.startsWith('[') ? wedding.contactEmail : '';
+
+Astro.response.headers.set('Cache-Control', 'no-store');
+---
+
+<Layout title="Save the date" description={`Send ${wedding.couple.first} and ${wedding.couple.second} your mailing address.`} noindex>
+  <div class="container">
+    <div class="page-title">
+      <p class="eyebrow">Save the date</p>
+      <h1>Where can we send it?</h1>
+      <p>We are getting married on {wedding.date}. Tell us your mailing address, and we will send you a save the date and an invitation.</p>
+    </div>
+
+    {error && <p class="error card" role="alert">{error}</p>}
+
+    {
+      !party && (
+        <form class="card" method="get" action="/address" role="search">
+          <label>
+            Your last name
+            <input name="last" required minlength="2" maxlength="60" value={last} autocomplete="family-name" />
+          </label>
+          <button class="button" type="submit">Find my name</button>
+        </form>
+      )
+    }
+
+    {
+      searched && matches.length > 0 && (
+        <div class="card results" aria-live="polite">
+          <p class="party">Select your name.</p>
+          <ul>
+            {matches.map((p) => (
+              <li>
+                <a href={`/address?code=${p.code}`}>
+                  <strong>{p.name}</strong>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p class="muted small">Your name is not here? Search for a different last name in your household.</p>
+        </div>
+      )
+    }
+
+    {
+      searched && matches.length === 0 && (
+        <p class="card" role="status">
+          We cannot find the last name "{last}". Make sure that the spelling is correct, or search for a different
+          last name in your household.
+          {contact && <> You can also send your address to {contact}.</>}
+        </p>
+      )
+    }
+
+    {party && (
+      <form class="card" method="post" action="/api/address">
+        <input type="hidden" name="code" value={party.code} />
+        <p class="party">
+          Address for <strong>{party.name}</strong>
+          {hasAddress && <><br /><span class="muted">We already have an address for you. Send the form again to change it.</span></>}
+        </p>
+
+        <label>
+          Name on the envelope
+          <input name="name" required maxlength="200" value={party.name} autocomplete="name" />
+          <small class="muted">For example: Mr. and Mrs. John Smith, or The Smith Family.</small>
+        </label>
+
+        <label>
+          Street address
+          <input name="line1" required maxlength="200" autocomplete="address-line1" />
+        </label>
+        <label>
+          Apartment, suite, or unit (optional)
+          <input name="line2" maxlength="200" autocomplete="address-line2" />
+        </label>
+
+        <div class="row">
+          <label class="city">
+            City
+            <input name="city" required maxlength="100" autocomplete="address-level2" />
+          </label>
+          <label>
+            State
+            <input name="region" maxlength="100" autocomplete="address-level1" />
+          </label>
+          <label>
+            ZIP code
+            <input name="postal" required maxlength="20" autocomplete="postal-code" />
+          </label>
+        </div>
+
+        <label>
+          Country
+          <input name="country" maxlength="100" value="United States" autocomplete="country-name" />
+        </label>
+
+        <label>
+          Email (optional)
+          <input name="email" type="email" maxlength="200" autocomplete="email" />
+          <small class="muted">We use your email only to send you wedding updates.</small>
+        </label>
+
+        <!-- Bots fill this in. People do not see it. -->
+        <label class="hp" aria-hidden="true">
+          Website <input name="website" tabindex="-1" autocomplete="off" />
+        </label>
+
+        <button class="button" type="submit">Send my address</button>
+        <p class="muted small"><a href="/address">This is not my name.</a></p>
+      </form>
+    )}
+  </div>
+</Layout>
+
+<style>
+  form { display: grid; gap: 20px; }
+  label { display: grid; gap: 6px; font-weight: 600; font-size: 0.95rem; }
+  input {
+    font: inherit;
+    font-weight: 400;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--bg);
+    width: 100%;
+    transition: border-color 0.2s;
+  }
+  input:focus { outline: 1px solid var(--text); outline-offset: 0; border-color: var(--text); }
+  .row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 560px) { .row { grid-template-columns: 1fr 1fr; } .row .city { grid-column: 1 / -1; } }
+  .results { display: grid; gap: 16px; }
+  .results ul { list-style: none; margin: 0; padding: 0; display: grid; }
+  .results li + li { border-top: 1px solid var(--line); }
+  .results a { display: block; padding: 14px 0; color: inherit; text-decoration: none; }
+  .results a:hover strong, .results a:focus-visible strong { text-decoration: underline; text-underline-offset: 4px; }
+  small { font-weight: 400; }
+  .small { font-size: 0.9rem; margin: 0; }
+  .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+  .party { margin: 0; font-size: 1.05rem; }
+  .error { border-color: #b4553f; color: #8a3a28; }
+  button { justify-self: start; }
+</style>
