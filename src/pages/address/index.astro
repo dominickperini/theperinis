@@ -96,7 +96,7 @@ Astro.response.headers.set('Cache-Control', 'no-store');
     }
 
     {party && (
-      <form class="card" method="post" action="/api/address">
+      <form class="card seated" method="post" action="/api/address">
         <input type="hidden" name="code" value={party.code} />
         <p class="party">
           Address for <strong>{party.name}</strong>

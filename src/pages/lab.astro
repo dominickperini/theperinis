@@ -1,0 +1,688 @@
+---
+// Motion lab: a test page to try ideas before they go on the site.
+// It is not in the menu and search engines do not index it.
+import Layout from '../layouts/Layout.astro';
+
+// Houndstooth tile (8 x 8) in five pieces, the same shape as --houndstooth.
+const pieces = ['M0 0H4V4H0Z', 'M6 0H8L4 4V2Z', 'M8 2V4H6Z', 'M4 4V6L2 8H0Z', 'M0 4H2L0 6Z'];
+const grid = (cols: number, rows: number) =>
+  Array.from({ length: cols * rows }, (_, i) => ({ x: (i % cols) * 8, y: Math.floor(i / cols) * 8, c: i % cols, r: Math.floor(i / cols) }));
+
+const menus = [
+  { key: 'hairline', name: 'Hairline', note: 'What the site uses now. A thin line grows under the link.' },
+  { key: 'glide', name: 'Glide', note: 'One line glides from link to link and settles under the one you point at, like a car that pulls in. It goes back to the current page.' },
+  { key: 'contour', name: 'Contour', note: 'The same motion as the text links: the line rises into a soft wave.' },
+  { key: 'summit', name: 'Summit', note: 'A small peak rises under the link, like a summit marker on a map.' },
+  { key: 'brackets', name: 'Brackets', note: 'Fine corner marks close in around the link, like a viewfinder that frames it.' },
+];
+const links = ['Our Story', 'Schedule', 'Travel', 'FAQ'];
+
+// A better houndstooth: the real weave. Houndstooth is a 2/2 twill with
+// 4 dark and 4 light threads in both directions. A cell is dark where the
+// thread on top is dark. This gives the true stepped tooth of the fabric.
+const dark = (x: number, y: number) => ((((x - y) % 4) + 4) % 4 < 2 ? x % 8 < 4 : y % 8 < 4);
+const cells = Array.from({ length: 64 }, (_, i) => ({ x: i % 8, y: Math.floor(i / 8) }));
+const darkCells = cells.filter((c) => dark(c.x, c.y));
+const lightCells = cells.filter((c) => !dark(c.x, c.y));
+
+// Dissolve: whole teeth that get smaller row by row as they rise, like a halftone.
+const fadeCols = 120;
+const fadeRows = 9;
+const fade = grid(fadeCols, fadeRows).map((t) => {
+  const k = (t.r + 1) / fadeRows; // small at the top, full at the bottom
+  return { ...t, s: Math.round(Math.pow(k, 1.6) * 100) / 100 };
+});
+
+---
+
+<Layout title="Motion lab" noindex>
+  <header class="page-title container">
+    <p class="eyebrow">Motion lab</p>
+    <h1>Open ideas</h1>
+    <p>Put your pointer on an item, or tap it. This page is for testing only.</p>
+  </header>
+
+  <div class="wide">
+
+    <section class="group" aria-labelledby="g-glide">
+      <div class="head">
+        <p class="label">Motion</p>
+        <h2 id="g-glide">Glide, everywhere</h2>
+        <p class="muted note">The same rule as the Glide menu line: one element travels from one state to the next, fast at the start and slow at the end, like a car that pulls in. The line always moves along its own direction. Four places to use it. Pick the ones you like.</p>
+      </div>
+
+      <div class="glide-list">
+        <figure class="glide-row">
+          <div class="g-stage pages-demo">
+            <nav class="g-tabs" aria-label="Demo pages">
+              {['Our Story', 'Schedule', 'Travel'].map((t, i) => (
+                <button type="button" class={i === 0 ? 'on' : ''} data-page={i}>{t}</button>
+              ))}
+              <span class="g-line" aria-hidden="true"></span>
+            </nav>
+            <div class="g-pages">
+              <div class="g-page on"><p class="g-big">Our story</p><p class="muted">We met on October 7, 2022.</p></div>
+              <div class="g-page"><p class="g-big">The weekend</p><p class="muted">Sunday, September 5, 2027.</p></div>
+              <div class="g-page"><p class="g-big">Getting there</p><p class="muted">Dunafon Castle, Indian Hills.</p></div>
+            </div>
+          </div>
+          <figcaption>
+            <p class="label">1. Glide across pages</p>
+            <p class="muted small">When you open another page, the menu line glides to the new link while the new page comes in from the side a little. The line does not jump or redraw. Click the links.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="glide-row">
+          <div class="g-stage scroll-demo marker-demo" tabindex="0">
+            <span class="m-tick" aria-hidden="true"></span>
+            {['The details', 'Our story', 'The weekend', 'Getting there'].map((t) => (
+              <div class="m-sec"><p class="label">Section</p><p class="g-big">{t}</p><p class="muted">Text for this section.</p></div>
+            ))}
+          </div>
+          <figcaption>
+            <p class="label">2. Section marker</p>
+            <p class="muted small">A short tick in the left margin glides down to the section that you read, like the needle of a gauge. Scroll inside the box.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="glide-row">
+          <div class="g-stage faq-demo">
+            <span class="q-line" aria-hidden="true"></span>
+            {[
+              ['What should I wear?', 'Cocktail attire. The ceremony is outside, so bring a layer.'],
+              ['Can I bring a guest?', 'Your invitation shows the number of seats that we saved for you.'],
+              ['Is there parking?', 'Yes, at the castle.'],
+            ].map(([q, a]) => (
+              <details class="q"><summary>{q}</summary><p class="muted">{a}</p></details>
+            ))}
+          </div>
+          <figcaption>
+            <p class="label">3. FAQ marker</p>
+            <p class="muted small">The questions stay plain text. A thin line beside them glides to the question that you point at or open. No boxes.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="glide-row">
+          <div class="g-stage scroll-demo story-demo" tabindex="0">
+            <div class="s-track">
+              <span class="s-rail" aria-hidden="true"></span>
+              <span class="s-dot" aria-hidden="true"></span>
+              {[
+                ['October 7, 2022', 'We met'],
+                ['October 21, 2022', 'We started dating'],
+                ['Thanksgiving 2024', 'Our house in Broomfield'],
+                ['July 10, 2025', 'We got engaged'],
+                ['January 6, 2026', 'Sapporo came home'],
+                ['September 5, 2027', 'We get married'],
+              ].map(([d, t]) => (
+                <div class="s-item"><p class="label">{d}</p><p class="g-big">{t}</p></div>
+              ))}
+            </div>
+          </div>
+          <figcaption>
+            <p class="label">4. Story timeline</p>
+            <p class="muted small">On Our Story, one dot travels along the timeline and stops at the milestone in the middle of the screen. Scroll inside the box.</p>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="group" aria-labelledby="g-weave">
+      <div class="head">
+        <p class="label">Houndstooth</p>
+        <h2 id="g-weave">A better houndstooth</h2>
+        <p class="muted note">Now the pattern is a flat tile that repeats. These four versions treat it like the real fabric, or like a precise drawing. Each one is shown as the footer band. You picked C, Seat insert. It is now on the footer and the RSVP and save-the-date cards.</p>
+      </div>
+
+      <svg width="0" height="0" class="defs" aria-hidden="true">
+        <defs>
+          <pattern id="weave" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="scale(1.75)">
+            <rect width="8" height="8" class="w-bg" />
+            {lightCells.map((c) => <path class="w-light" d={`M${c.x + 0.2} ${c.y + 0.85}L${c.x + 0.85} ${c.y + 0.2}`} />)}
+            {darkCells.map((c) => <rect class="w-dark" x={c.x + 0.05} y={c.y + 0.05} width="0.9" height="0.9" />)}
+            {darkCells.map((c) => <path class="w-sheen" d={`M${c.x + 0.2} ${c.y + 0.85}L${c.x + 0.85} ${c.y + 0.2}`} />)}
+          </pattern>
+          <pattern id="pepita" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="scale(0.9)">
+            <rect width="8" height="8" class="p-bg" />
+            {pieces.map((d) => <path class="p-dark" d={d} />)}
+          </pattern>
+        </defs>
+      </svg>
+
+      <div class="weave-list">
+        <figure class="weave-row">
+          <div class="band-demo"><svg class="band" preserveAspectRatio="none" aria-hidden="true"><rect width="100%" height="100%" fill="url(#weave)" /></svg></div>
+          <figcaption>
+            <p class="label">A. Woven</p>
+            <p class="muted small">The true weave of the fabric: each square is one thread, with a fine diagonal line like twill. From a distance it reads as houndstooth; close up it reads as cloth. Moss on oat.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="weave-row">
+          <div class="band-demo tall">
+            <svg class="fade" viewBox={`0 0 ${fadeCols * 8} ${fadeRows * 8}`} preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+              {fade.map((t) => (
+                <g transform={`translate(${t.x + 4} ${t.y + 4}) scale(${t.s}) translate(-4 -4)`}>
+                  <g class="ft" style={`--d:${(t.c % 30) * 16 + (fadeRows - t.r) * 40}ms`}>{pieces.map((d) => <path d={d} />)}</g>
+                </g>
+              ))}
+            </svg>
+          </div>
+          <figcaption>
+            <p class="label">B. Dissolve</p>
+            <p class="muted small">The weave is complete at the bottom edge and breaks into smaller and smaller threads as it rises into the page, like a halftone print. When it comes into view, the threads settle in one time.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="weave-row">
+          <div class="band-demo seat">
+            <span class="stitch" aria-hidden="true"></span>
+            <svg class="band insert" preserveAspectRatio="none" aria-hidden="true"><rect width="100%" height="100%" fill="url(#pepita)" /></svg>
+            <span class="stitch" aria-hidden="true"></span>
+          </div>
+          <div class="seat-card">
+            <svg class="insert-v" preserveAspectRatio="none" aria-hidden="true"><rect width="100%" height="100%" fill="url(#pepita)" /></svg>
+            <div>
+              <p class="label">RSVP</p>
+              <p class="seat-title">Will you join us?</p>
+            </div>
+          </div>
+          <figcaption>
+            <p class="label">C. Seat insert</p>
+            <p class="muted small">From the Pepita seats of a classic 911: a narrow insert of very fine graphite houndstooth between two stitched seams. Used sparingly, as a band and as the edge of a card (the RSVP card, for example).</p>
+          </figcaption>
+        </figure>
+
+        <figure class="weave-row">
+          <div class="band-demo contour-demo" tabindex="0">
+            <svg class="contour" viewBox="0 0 320 24" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <g class="c-line">{grid(41, 4).map((t) => pieces.map((d) => <path d={d} transform={`translate(${t.x - 4} ${t.y - 4})`} />))}</g>
+              <g class="c-fill">{grid(41, 4).map((t) => (
+                <g transform={`translate(${t.x - 4} ${t.y - 4})`} style={`--d:${(t.c + t.r) * 16}ms`}>{pieces.map((d) => <path d={d} />)}</g>
+              ))}</g>
+            </svg>
+          </div>
+          <figcaption>
+            <p class="label">D. Drawn</p>
+            <p class="muted small">The tooth as a fine line drawing, like a technical drawing. At rest it is only hairlines. Point at it, and the teeth fill with moss one after the other, left to right.</p>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="group" aria-labelledby="g-menu">
+      <div class="head">
+        <p class="label">Menu</p>
+        <h2 id="g-menu">Menu links</h2>
+        <p class="muted note">The second link in each menu is the current page.</p>
+      </div>
+      <div class="menus">
+        {
+          menus.map((m, n) => (
+            <div class="menu-demo">
+              <div class="menu-text">
+                <p class="label">{n + 1}. {m.name}</p>
+                <p class="muted small">{m.note}</p>
+              </div>
+              <nav class={`fake-nav nav-${m.key}`} aria-label={`${m.name} demo`}>
+                {links.map((t, i) => (
+                  <a class="demo navlink" href="#" aria-current={i === 1 ? 'page' : undefined}>
+                    {t}
+                    {m.key === 'summit' && (
+                      <svg class="peak" viewBox="0 0 10 5" aria-hidden="true"><path d="M0 5 L5 0.5 L10 5" /></svg>
+                    )}
+                    {m.key === 'brackets' && <span class="brk" aria-hidden="true"><i /><i /><i /><i /></span>}
+                  </a>
+                ))}
+                {m.key === 'glide' && <span class="glider" aria-hidden="true" />}
+              </nav>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="group" aria-labelledby="g-tooth">
+      <div class="head">
+        <p class="label">Houndstooth</p>
+        <h2 id="g-tooth">Houndstooth in motion</h2>
+        <p class="muted note">Four ideas for a moving houndstooth: a loading mark, a logo, the footer band and a pattern that reacts to you.</p>
+      </div>
+      <div class="tooth-grid">
+        <figure class="tooth-card">
+          <div class="stage">
+            <svg class="loom" viewBox="0 0 24 24" aria-label="Loading">
+              {grid(3, 3).map((t) => pieces.map((d, k) => (
+                <path d={d} transform={`translate(${t.x} ${t.y})`} style={`--d: ${(t.c + t.r) * 0.12 + k * 0.05}s`} />
+              )))}
+            </svg>
+          </div>
+          <figcaption>
+            <p class="label">A. Loom</p>
+            <p class="muted small">A loading mark. The pattern weaves itself piece by piece from the corner, then unweaves, like thread on a loom. For the RSVP send button and page loads.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="tooth-card">
+          <a class="stage demo logo-demo" href="#">
+            <svg class="mark" viewBox="0 0 16 16" aria-hidden="true">
+              {grid(2, 2).map((t, i) => (
+                <g transform={`translate(${t.x} ${t.y})`}><g class="tile" style={`--i: ${i}`}>{pieces.map((d) => <path d={d} />)}</g></g>
+              ))}
+            </svg>
+            <span class="logo-word">D<em>&amp;</em>S</span>
+          </a>
+          <figcaption>
+            <p class="label">B. Monogram mark</p>
+            <p class="muted small">A small logo: four houndstooth tiles beside D&amp;S. On hover each tile turns a quarter, one after the other, and locks back into the pattern, like a dial that clicks.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="tooth-card">
+          <div class="stage band-stage"><div class="breeze" aria-hidden="true"></div></div>
+          <figcaption>
+            <p class="label">C. Breeze</p>
+            <p class="muted small">The footer band. A slow, soft light moves across the pattern, like wind over a field of grass. Very quiet; it loops every few seconds.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="tooth-card">
+          <div class="stage field-stage">
+            <svg class="field" viewBox="0 0 160 64" aria-hidden="true">
+              <defs><g id="tooth">{pieces.map((d) => <path d={d} />)}</g></defs>
+              {grid(20, 8).map((t) => (
+                <g transform={`translate(${t.x} ${t.y})`}><use href="#tooth" class="cell" data-x={t.x + 4} data-y={t.y + 4} /></g>
+              ))}
+            </svg>
+          </div>
+          <figcaption>
+            <p class="label">D. Field</p>
+            <p class="muted small">A houndstooth panel that reacts to your pointer. The teeth near it turn a little, like grass that bends as you walk through. For the home page or the RSVP card.</p>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .group { margin: 0 0 clamp(72px, 10vw, 128px); }
+  .head { display: grid; gap: 6px 32px; border-top: 1px solid var(--text); padding-top: 18px; margin-bottom: 32px; }
+  .head h2 { margin: 0; }
+  .head .note { margin: 0; max-width: 44ch; }
+  @media (min-width: 900px) { .head { grid-template-columns: 2fr 4fr 6fr; align-items: baseline; } }
+  .small { font-size: 0.95rem; margin: 6px 0 0; }
+
+
+
+  /* ---------- Glide, everywhere ---------- */
+  .glide-list { display: grid; gap: 56px 40px; }
+  @media (min-width: 900px) { .glide-list { grid-template-columns: 1fr 1fr; } }
+  .glide-row { margin: 0; display: grid; gap: 14px; align-content: start; }
+  .glide-row figcaption p { margin: 0; }
+  .g-stage { position: relative; background: var(--surface); border: 1px solid var(--line); padding: 28px; min-height: 240px; }
+  .g-big { font-family: var(--display); font-size: 1.7rem; line-height: 1.1; margin: 0 0 4px; }
+  .g-stage .muted { margin: 0; }
+
+  .g-tabs { position: relative; display: flex; gap: 28px; margin-bottom: 36px; }
+  .g-tabs button {
+    background: none; border: 0; padding: 6px 0; cursor: pointer; color: var(--text);
+    font: inherit; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .g-tabs button.on { font-weight: 500; }
+  .g-line, .f-line {
+    position: absolute; left: 0; top: 0; height: 1px; width: 1px; transform-origin: left; pointer-events: none;
+    transform: translate(var(--gx, 0px), var(--gy, 0px)) scaleX(var(--gw, 0));
+    transition: transform 0.55s var(--glide);
+  }
+  .g-line { background: var(--text); }
+  .g-pages { display: grid; }
+  .g-page { grid-area: 1 / 1; opacity: 0; transform: translateX(var(--from, 24px)); transition: opacity 0.35s var(--ease), transform 0.55s var(--glide); pointer-events: none; }
+  .g-page.on { opacity: 1; transform: none; pointer-events: auto; }
+
+  .field-demo { display: grid; gap: 18px; }
+  .field-demo label { display: grid; gap: 6px; font-weight: 600; font-size: 0.9rem; }
+  .field-demo input { font: inherit; font-weight: 400; padding: 10px 12px; border: 1px solid var(--line); background: var(--bg); outline: none; }
+  .f-line { height: 2px; background: var(--accent); }
+
+  .scroll-demo { height: 260px; min-height: 0; overflow-y: auto; outline: none; }
+  .m-tick {
+    position: absolute; left: 10px; top: 0; width: 1px; height: 28px; background: var(--accent);
+    transform: translateY(var(--my, 28px)); transition: transform 0.55s var(--glide);
+  }
+  .marker-demo { padding-left: 32px; }
+  .m-sec { padding: 6px 0 90px; }
+  .m-sec .label { margin: 0 0 4px; }
+
+  .faq-demo { padding-left: 40px; }
+  .q { border-bottom: 1px solid var(--line); }
+  .q summary { list-style: none; cursor: pointer; padding: 14px 0; font-size: 1.05rem; }
+  .q summary::-webkit-details-marker { display: none; }
+  .q p { padding: 0 0 14px; }
+  .q-line {
+    position: absolute; left: 22px; top: 0; width: 1px; height: 1px; background: var(--accent); transform-origin: top;
+    transform: translateY(var(--qy, 0px)) scaleY(var(--qh, 0)); transition: transform 0.55s var(--glide);
+  }
+
+  .story-demo { padding: 0; }
+  .s-track { position: relative; padding: 110px 28px 110px 64px; }
+  .s-rail { position: absolute; left: 36px; top: 0; bottom: 0; width: 1px; background: var(--line); }
+  .s-dot {
+    position: absolute; left: 32px; top: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--accent);
+    transform: translateY(var(--sy, 110px)); transition: transform 0.55s var(--glide);
+  }
+  .s-item { padding: 0 0 44px; opacity: 0.45; transition: opacity 0.4s var(--ease); }
+  .s-item.on { opacity: 1; }
+  .s-item .label { margin: 0 0 2px; }
+  @media (prefers-reduced-motion: reduce) {
+    .g-line, .f-line, .m-tick, .q-line, .s-dot, .g-page { transition: none; }
+  }
+
+  /* ---------- A better houndstooth ---------- */
+  .defs { position: absolute; }
+  .weave-list { display: grid; gap: 56px; }
+  .weave-row { margin: 0; display: grid; gap: 14px; }
+  .weave-row figcaption { max-width: 60ch; }
+  .weave-row figcaption p { margin: 0; }
+  .band-demo { height: 48px; border-top: 1px solid var(--line); }
+  .band-demo.tall { height: 96px; border: 0; }
+  .band { display: block; width: 100%; height: 100%; }
+  .w-bg { fill: #e6decf; }
+  .w-light { stroke: var(--accent); stroke-opacity: 0.16; stroke-width: 0.12; }
+  .w-dark { fill: var(--accent); }
+  .w-sheen { stroke: #fff; stroke-opacity: 0.16; stroke-width: 0.12; }
+  .p-bg { fill: var(--surface); }
+  .p-dark { fill: var(--text); }
+
+  .fade { display: block; width: 100%; height: 100%; fill: var(--accent); }
+  .ft { transform-box: fill-box; transform-origin: center; }
+  .js .fade:not(.in) .ft { opacity: 0; transform: scale(0.3); }
+  .js .fade.in .ft { transition: opacity 0.45s var(--ease) var(--d), transform 0.6s var(--glide) var(--d); }
+
+  .seat { display: grid; grid-template-rows: 1px 24px 1px; gap: 5px; height: auto; border: 0; padding: 8px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .stitch { display: block; height: 1px; background: repeating-linear-gradient(90deg, var(--muted) 0 6px, transparent 6px 10px); opacity: 0.7; }
+  .seat-card { display: grid; grid-template-columns: 14px 1fr; gap: 24px; max-width: 420px; background: var(--surface); border: 1px solid var(--line); padding: 0 24px 0 0; }
+  .insert-v { width: 14px; height: 100%; display: block; border-right: 1px dashed var(--muted); }
+  .seat-card div { padding: 22px 0; }
+  .seat-card p { margin: 0; }
+  .seat-title { font-family: var(--display); font-size: 1.8rem; line-height: 1.1; }
+
+  .contour-demo { height: 64px; outline: none; }
+  .contour { display: block; width: 100%; height: 100%; }
+  .c-line path { fill: none; stroke: var(--text); stroke-opacity: 0.6; stroke-width: 1.2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  .c-fill g { color: var(--bg); fill: currentColor; transition: color 0.35s var(--ease) var(--d); }
+  .c-fill path { stroke: currentColor; stroke-width: 0.6; vector-effect: non-scaling-stroke; }
+  .contour-demo:is(:hover, :focus-visible, .on) .c-fill g { color: var(--accent); }
+  @media (prefers-reduced-motion: reduce) {
+    .js .fade:not(.in) .ft { opacity: 1; transform: none; }
+    .c-fill g { transition: none; }
+  }
+
+  /* ---------- Menu links ---------- */
+  .menus { display: grid; gap: 0; }
+  .menu-demo { display: grid; gap: 12px 32px; padding: 28px 0; border-bottom: 1px solid var(--line); }
+  @media (min-width: 900px) { .menu-demo { grid-template-columns: 5fr 7fr; align-items: center; } }
+  .menu-text p { margin: 0; }
+  .fake-nav { position: relative; display: flex; flex-wrap: wrap; gap: 8px 30px; }
+  .navlink {
+    position: relative; padding: 8px 0; text-decoration: none; color: var(--text);
+    font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .navlink:hover { color: var(--text); }
+  .navlink[aria-current='page'] { font-weight: 500; }
+
+  /* 1. Hairline */
+  .nav-hairline .navlink::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: currentColor;
+    transform: scaleX(0); transform-origin: right; transition: transform 0.5s var(--ease);
+  }
+  .nav-hairline .navlink:is(:hover, :focus-visible, .on, [aria-current='page'])::after { transform: scaleX(1); transform-origin: left; }
+
+  /* 2. Glide: the script moves one line. */
+  .glider {
+    position: absolute; left: 0; bottom: 0; height: 1px; width: 1px; background: var(--text);
+    transform-origin: left; pointer-events: none;
+    transform: translateX(var(--gx, 0px)) scaleX(var(--gw, 0));
+    transition: transform 0.55s var(--glide);
+  }
+
+  /* 3. Contour */
+  .nav-contour .navlink {
+    background: var(--contour) 0 100% / 24px 1px repeat-x;
+    background-size: 24px 0px;
+    transition: background-size 0.45s var(--glide);
+  }
+  .nav-contour .navlink[aria-current='page'] { background-size: 24px 1px; }
+  .nav-contour .navlink:is(:hover, :focus-visible, .on) { background-size: 24px 6px; }
+
+  /* 4. Summit */
+  .peak {
+    position: absolute; left: 50%; bottom: -4px; width: 10px; height: 5px; margin-left: -5px; overflow: visible;
+    fill: none; stroke: var(--accent); stroke-width: 1;
+    opacity: 0; transform: translateY(5px); transition: transform 0.45s var(--glide), opacity 0.3s var(--ease);
+  }
+  .nav-summit .navlink:is(:hover, :focus-visible, .on, [aria-current='page']) .peak { opacity: 1; transform: none; }
+
+  /* 5. Brackets */
+  .brk { position: absolute; inset: 2px -8px; pointer-events: none; }
+  .brk i {
+    position: absolute; width: 5px; height: 5px; border: 0 solid var(--accent); opacity: 0;
+    transition: transform 0.45s var(--glide), opacity 0.3s var(--ease);
+  }
+  .brk i:nth-child(1) { left: 0; top: 0; border-width: 1px 0 0 1px; transform: translate(-6px, -4px); }
+  .brk i:nth-child(2) { right: 0; top: 0; border-width: 1px 1px 0 0; transform: translate(6px, -4px); }
+  .brk i:nth-child(3) { left: 0; bottom: 0; border-width: 0 0 1px 1px; transform: translate(-6px, 4px); }
+  .brk i:nth-child(4) { right: 0; bottom: 0; border-width: 0 1px 1px 0; transform: translate(6px, 4px); }
+  .nav-brackets .navlink:is(:hover, :focus-visible, .on, [aria-current='page']) .brk i { opacity: 1; transform: none; }
+
+  /* ---------- Houndstooth ---------- */
+  .tooth-grid { display: grid; gap: 48px 32px; }
+  @media (min-width: 900px) { .tooth-grid { grid-template-columns: repeat(4, 1fr); } }
+  .tooth-card { margin: 0; }
+  .stage {
+    display: grid; place-items: center; aspect-ratio: 1; background: var(--surface);
+    border: 1px solid var(--line); margin-bottom: 14px; text-decoration: none; color: var(--text); overflow: hidden;
+  }
+  .tooth-card figcaption p { margin: 0; }
+
+  /* A. Loom */
+  .loom { width: 96px; height: 96px; fill: var(--accent); }
+  .loom path { opacity: 0; animation: weave 2.6s var(--machined) infinite; animation-delay: var(--d); }
+  @keyframes weave {
+    0% { opacity: 0; transform: scale(0.6); }
+    18%, 62% { opacity: 1; transform: none; }
+    80%, 100% { opacity: 0; transform: none; }
+  }
+  .loom path { transform-box: fill-box; transform-origin: center; }
+
+  /* B. Monogram mark */
+  .logo-demo { grid-auto-flow: column; gap: 12px; place-content: center; }
+  .mark { width: 34px; height: 34px; fill: var(--accent); overflow: visible; }
+  .mark .tile { transform-box: fill-box; transform-origin: center; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); transition-delay: calc(var(--i) * 0.07s); }
+  .logo-demo:is(:hover, :focus-visible, .on) .tile { transform: rotate(90deg); }
+  .logo-word { font-family: var(--display); font-size: 2rem; letter-spacing: 0.04em; }
+  .logo-word em { font-family: var(--serif); font-style: italic; color: var(--accent); margin: 0 0.08em; }
+
+  /* C. Breeze: a soft light band moves across the pattern. */
+  .band-stage { place-items: stretch; }
+  .breeze {
+    background: var(--houndstooth) 0 0 / 12px 12px;
+    -webkit-mask-image: linear-gradient(100deg, rgb(0 0 0 / 0.35) 30%, #000 45%, rgb(0 0 0 / 0.35) 60%);
+    mask-image: linear-gradient(100deg, rgb(0 0 0 / 0.35) 30%, #000 45%, rgb(0 0 0 / 0.35) 60%);
+    -webkit-mask-size: 300% 100%;
+    mask-size: 300% 100%;
+    animation: breeze 7s ease-in-out infinite;
+  }
+  @keyframes breeze {
+    from { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+    to { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+  }
+
+  /* D. Field */
+  .field-stage { aspect-ratio: auto; height: auto; padding: 12px; }
+  .field { width: 100%; height: auto; fill: var(--accent); }
+  .field .cell { transform-box: fill-box; transform-origin: center; transition: transform 0.5s var(--glide); }
+  @media (min-width: 900px) { .field-stage { aspect-ratio: 1; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .loom path { animation: none !important; opacity: 1; }
+    .breeze { animation: none !important; }
+  }
+</style>
+
+<script>
+  // Taps and clicks play the effect and do not go anywhere.
+  document.querySelectorAll<HTMLAnchorElement>('.demo').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      el.classList.add('on');
+      setTimeout(() => el.classList.remove('on'), 1400);
+    });
+  });
+
+  // Glide: one line moves to the link under the pointer, then back to the current page.
+  document.querySelectorAll<HTMLElement>('.nav-glide').forEach((nav) => {
+    const glider = nav.querySelector<HTMLElement>('.glider')!;
+    const items = [...nav.querySelectorAll<HTMLElement>('.navlink')];
+    const home = items.find((a) => a.getAttribute('aria-current') === 'page') ?? items[0];
+    const to = (a: HTMLElement) => {
+      glider.style.setProperty('--gx', `${a.offsetLeft}px`);
+      glider.style.setProperty('--gw', String(a.offsetWidth));
+      glider.style.top = `${a.offsetTop + a.offsetHeight - 1}px`;
+    };
+    to(home);
+    items.forEach((a) => {
+      a.addEventListener('pointerenter', () => to(a));
+      a.addEventListener('focus', () => to(a));
+      a.addEventListener('click', () => to(a));
+    });
+    nav.addEventListener('pointerleave', () => to(home));
+    window.addEventListener('resize', () => to(home));
+  });
+
+  // Field: teeth near the pointer turn a little, like grass that bends.
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll<SVGSVGElement>('.field').forEach((svg) => {
+    if (still) return;
+    const cells = [...svg.querySelectorAll<SVGUseElement>('.cell')];
+    let frame = 0;
+    const bend = (px: number, py: number) => {
+      for (const c of cells) {
+        const dx = Number(c.dataset.x) - px;
+        const dy = Number(c.dataset.y) - py;
+        const k = Math.exp(-(dx * dx + dy * dy) / 500);
+        c.style.transform = k > 0.02 ? `rotate(${(k * 35 * Math.sign(dx || 1)).toFixed(1)}deg) scale(${(1 - k * 0.25).toFixed(3)})` : '';
+      }
+    };
+    const point = (e: PointerEvent) => {
+      const box = svg.getBoundingClientRect();
+      const px = ((e.clientX - box.left) / box.width) * 160;
+      const py = ((e.clientY - box.top) / box.height) * 64;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => bend(px, py));
+    };
+    svg.addEventListener('pointermove', point);
+    svg.addEventListener('pointerdown', point);
+    svg.addEventListener('pointerleave', () => cells.forEach((c) => (c.style.transform = '')));
+  });
+  // Dissolve: the threads settle in one time when the band comes into view.
+  const fadeIo = new IntersectionObserver((entries) => {
+    for (const e of entries) if (e.isIntersecting) { e.target.classList.add('in'); fadeIo.unobserve(e.target); }
+  }, { threshold: 0.4 });
+  document.querySelectorAll('.fade').forEach((el) => fadeIo.observe(el));
+
+  // Drawn: a tap fills the teeth on touch screens.
+  document.querySelectorAll<HTMLElement>('.contour-demo').forEach((el) => {
+    el.addEventListener('click', () => el.classList.toggle('on'));
+  });
+  // ---------- Glide, everywhere ----------
+  // 1. Pages: the line glides to the new link and the new page slides in a little.
+  document.querySelectorAll<HTMLElement>('.pages-demo').forEach((demo) => {
+    const tabs = [...demo.querySelectorAll<HTMLButtonElement>('.g-tabs button')];
+    const line = demo.querySelector<HTMLElement>('.g-line')!;
+    const pages = [...demo.querySelectorAll<HTMLElement>('.g-page')];
+    let cur = 0;
+    const place = (b: HTMLElement) => {
+      line.style.setProperty('--gx', `${b.offsetLeft}px`);
+      line.style.setProperty('--gy', `${b.offsetTop + b.offsetHeight - 1}px`);
+      line.style.setProperty('--gw', String(b.offsetWidth));
+    };
+    place(tabs[0]);
+    tabs.forEach((b, i) => b.addEventListener('click', () => {
+      if (i === cur) return;
+      const dir = i > cur ? 1 : -1;
+      pages[i].style.setProperty('--from', `${24 * dir}px`);
+      pages[cur].style.setProperty('--from', `${-24 * dir}px`);
+      tabs[cur].classList.remove('on'); pages[cur].classList.remove('on');
+      tabs[i].classList.add('on'); pages[i].classList.add('on');
+      cur = i;
+      place(b);
+    }));
+    window.addEventListener('resize', () => place(tabs[cur]));
+  });
+
+  // 2. Field glide: one line moves to the field in focus.
+  document.querySelectorAll<HTMLElement>('.field-demo').forEach((demo) => {
+    const line = demo.querySelector<HTMLElement>('.f-line')!;
+    const inputs = [...demo.querySelectorAll<HTMLInputElement>('input')];
+    const place = (el: HTMLElement | null) => {
+      if (!el) { line.style.setProperty('--gw', '0'); return; }
+      line.style.setProperty('--gx', `${el.offsetLeft}px`);
+      line.style.setProperty('--gy', `${el.offsetTop + el.offsetHeight - 2}px`);
+      line.style.setProperty('--gw', String(el.offsetWidth));
+    };
+    inputs.forEach((i) => i.addEventListener('focus', () => place(i)));
+    demo.addEventListener('focusout', (e) => { if (!demo.contains(e.relatedTarget as Node)) place(null); });
+  });
+
+  // 3. Section marker: the tick glides to the section that is in view.
+  document.querySelectorAll<HTMLElement>('.marker-demo').forEach((box) => {
+    const tick = box.querySelector<HTMLElement>('.m-tick')!;
+    const secs = [...box.querySelectorAll<HTMLElement>('.m-sec')];
+    const update = () => {
+      const mid = box.scrollTop + box.clientHeight * 0.35;
+      let best = secs[0];
+      for (const s of secs) if (s.offsetTop <= mid) best = s;
+      tick.style.setProperty('--my', `${best.offsetTop + 6}px`);
+    };
+    box.addEventListener('scroll', update, { passive: true });
+    update();
+  });
+
+  // 4. FAQ marker: the line glides to the question you point at, or the open one.
+  document.querySelectorAll<HTMLElement>('.faq-demo').forEach((demo) => {
+    const line = demo.querySelector<HTMLElement>('.q-line')!;
+    const qs = [...demo.querySelectorAll<HTMLDetailsElement>('.q')];
+    const place = (q?: HTMLElement) => {
+      if (!q) { line.style.setProperty('--qh', '0'); return; }
+      line.style.setProperty('--qy', `${q.offsetTop + 10}px`);
+      line.style.setProperty('--qh', String(q.offsetHeight - 20));
+    };
+    const rest = () => place(qs.find((q) => q.open));
+    qs.forEach((q) => {
+      q.addEventListener('pointerenter', () => place(q));
+      q.addEventListener('toggle', () => requestAnimationFrame(() => place(q.open ? q : qs.find((x) => x.open))));
+    });
+    demo.addEventListener('pointerleave', rest);
+  });
+
+  // 5. Story timeline: the dot stops at the milestone in the middle of the box.
+  document.querySelectorAll<HTMLElement>('.story-demo').forEach((box) => {
+    const dot = box.querySelector<HTMLElement>('.s-dot')!;
+    const items = [...box.querySelectorAll<HTMLElement>('.s-item')];
+    const update = () => {
+      const mid = box.scrollTop + box.clientHeight / 2;
+      let best = items[0];
+      let d = Infinity;
+      for (const it of items) {
+        const c = it.offsetTop + 10;
+        if (Math.abs(c - mid) < d) { d = Math.abs(c - mid); best = it; }
+      }
+      items.forEach((it) => it.classList.toggle('on', it === best));
+      dot.style.setProperty('--sy', `${best.offsetTop + 4}px`);
+    };
+    box.addEventListener('scroll', update, { passive: true });
+    update();
+  });
+</script>
+

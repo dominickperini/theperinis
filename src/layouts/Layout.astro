@@ -11,6 +11,9 @@ interface Props {
 const { title, noindex = false, description = `The wedding of ${wedding.couple.first} and ${wedding.couple.second}.` } = Astro.props;
 const names = `${wedding.couple.first} & ${wedding.couple.second}`;
 const fullTitle = title ? `${title} | ${names}` : names;
+// Optional: an Adobe Fonts web project with IvyPresto Headline (the Marathon serif).
+// Set PUBLIC_ADOBE_FONTS_KIT in Vercel to its kit ID. Without it, Instrument Serif is used.
+const adobeKit = import.meta.env.PUBLIC_ADOBE_FONTS_KIT;
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 ---
 
@@ -28,9 +31,10 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500&family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+    {adobeKit && <link rel="stylesheet" href={`https://use.typekit.net/${adobeKit}.css`} />}
     <script is:inline>document.documentElement.classList.add('js');</script>
   </head>
   <body>
@@ -47,6 +51,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
                 </a>
               ))
             }
+            <span class="glider" aria-hidden="true"></span>
           </nav>
         </details>
       </div>
@@ -57,7 +62,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     </main>
 
     <footer class="site-footer">
-      <div class="footer-band" aria-hidden="true"></div>
+      <div class="footer-band seat-insert" aria-hidden="true"></div>
       <p class="footer-names">{wedding.couple.first} <em>&amp;</em> {wedding.couple.second}</p>
       <p class="eyebrow">{wedding.date}</p>
       {wedding.hashtag && <p class="muted">{wedding.hashtag}</p>}
@@ -70,11 +75,11 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     position: sticky;
     top: 0;
     z-index: 10;
-    background: color-mix(in srgb, var(--bg) 82%, transparent);
-    -webkit-backdrop-filter: saturate(1.4) blur(14px);
-    backdrop-filter: saturate(1.4) blur(14px);
+    /* A solid header. A blur filter here repaints on every scroll frame and makes scrolling slow. */
+    background: color-mix(in srgb, var(--bg) 96%, transparent);
     border-bottom: 1px solid transparent;
     transition: border-color 0.4s var(--ease);
+    view-transition-name: site-header;
   }
   .site-header.scrolled { border-bottom-color: var(--line); }
   .header-inner {
@@ -87,9 +92,9 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   }
   .monogram {
     font-family: var(--display);
-    font-weight: 500;
+    font-weight: 400;
     font-size: 1.05rem;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-decoration: none;
     color: var(--text);
   }
@@ -105,9 +110,10 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   .menu summary {
     list-style: none;
     cursor: pointer;
+    font-family: var(--mono);
     font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.2em;
+    font-weight: 500;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
   }
   .menu summary::-webkit-details-marker { display: none; }
@@ -127,12 +133,13 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     padding: 10px 0;
     text-decoration: none;
     color: var(--text);
-    letter-spacing: 0.18em;
+    font-family: var(--mono);
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     font-size: 0.72rem;
-    font-weight: 500;
+    font-weight: 400;
   }
-  .menu nav a[aria-current='page'] { font-weight: 600; }
+  .menu nav a[aria-current='page'] { font-weight: 500; }
 
   @media (min-width: 820px) {
     .menu summary { display: none; }
@@ -160,25 +167,43 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     }
     .menu nav a:hover::after,
     .menu nav a[aria-current='page']::after { transform: scaleX(1); transform-origin: left; }
+
+    /* Glide: with the script, one line glides from link to link, like a car that
+       pulls in, and goes back to the current page when the pointer leaves. */
+    .menu nav { position: relative; }
+    :global(.js) .menu nav a::after { display: none; }
+    .glider {
+      position: absolute; left: 0; bottom: 0; height: 1px; width: 1px;
+      background: var(--text); transform-origin: left; pointer-events: none;
+      transform: translateX(var(--gx, 0px)) scaleX(var(--gw, 0));
+      transition: transform 0.55s var(--glide);
+    }
+    .glider.instant { transition: none; }
   }
+  .glider { display: none; }
+  main { position: relative; }
+  :global(.page-enter) main > :global(*) { animation: page-in 0.6s var(--glide) both; }
+  @keyframes page-in { from { opacity: 0; transform: translateX(var(--enter, 0px)); } }
+  :global(.section-tick) {
+    position: absolute; top: 0; width: 1px; height: 32px; background: var(--accent);
+    opacity: 0; transform: translateY(var(--y, 0px));
+    transition: transform 0.6s var(--glide), opacity 0.3s var(--ease);
+  }
+  :global(.section-tick.show) { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { :global(.section-tick) { transition: none; } }
+  @media (min-width: 820px) { :global(.js) .glider { display: block; } }
+  @media (prefers-reduced-motion: reduce) { .glider { transition: none; } }
 
   .site-footer {
     text-align: center;
     padding: 0 20px 48px;
     color: var(--muted);
   }
-  .footer-band {
-    height: 28px;
-    margin: 0 -20px 44px;
-    background: var(--houndstooth) 0 0 / 14px 14px;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
-    opacity: 0.9;
-  }
+  .footer-band { margin: 0 -20px 44px; }
   .footer-names {
     font-family: var(--display);
-    font-weight: 300;
-    font-size: 1.6rem;
+    font-weight: 400;
+    font-size: 1.9rem;
     letter-spacing: -0.02em;
     color: var(--text);
     margin: 0 0 6px;
@@ -194,11 +219,205 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   sync();
   wide.addEventListener('change', sync);
 
+  // Glide: one line moves to the link under the pointer, then back to the current page.
+  const navEl = document.querySelector<HTMLElement>('.menu nav');
+  const glider = navEl?.querySelector<HTMLElement>('.glider');
+  if (navEl && glider) {
+    const items = [...navEl.querySelectorAll<HTMLAnchorElement>('a')];
+    const home = items.find((a) => a.getAttribute('aria-current') === 'page');
+    // `at` is the link where the line is now. On a click we save it, so that the
+    // next page starts the line at the same place on screen. With a mouse that is
+    // the clicked link already, so the line does not jump back and glide again.
+    let at: HTMLAnchorElement | undefined;
+    const to = (a?: HTMLAnchorElement) => {
+      at = a;
+      glider.style.setProperty('--gx', `${a ? a.offsetLeft : 0}px`);
+      glider.style.setProperty('--gw', String(a ? a.offsetWidth : 0));
+    };
+    const place = (a?: HTMLAnchorElement) => {
+      glider.classList.add('instant');
+      to(a);
+      void glider.offsetWidth; // apply the start position before the transition comes back
+      glider.classList.remove('instant');
+    };
+    const byHref = (h: string | null) => items.find((a) => a.getAttribute('href') === h);
+    // Glide across pages: the page comes in a little from the side of travel.
+    let line: HTMLAnchorElement | undefined;
+    let page: HTMLAnchorElement | undefined;
+    try {
+      line = byHref(sessionStorage.getItem('glide-line'));
+      page = byHref(sessionStorage.getItem('glide-from'));
+      sessionStorage.removeItem('glide-line');
+      sessionStorage.removeItem('glide-from');
+    } catch { /* storage can be off */ }
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (page && home && page !== home && !still && wide.matches) {
+      const dir = items.indexOf(home) > items.indexOf(page) ? 1 : -1;
+      document.querySelector('main')?.style.setProperty('--enter', `${dir * 18}px`);
+      document.documentElement.classList.add('page-enter');
+    }
+    // Wait for the fonts, so that the link sizes do not change during the glide.
+    glider.style.visibility = 'hidden';
+    const fonts = document.fonts?.ready ?? Promise.resolve();
+    fonts.then(() => {
+      const hovered = items.find((a) => a.matches(':hover'));
+      place(line && !still ? line : home);
+      glider.style.visibility = '';
+      requestAnimationFrame(() => to(hovered ?? home));
+    });
+    items.forEach((a) => a.addEventListener('click', () => {
+      try {
+        const cur = home?.getAttribute('href');
+        if (cur) sessionStorage.setItem('glide-from', cur);
+        const h = (at ?? home)?.getAttribute('href');
+        if (h) sessionStorage.setItem('glide-line', h);
+      } catch { /* storage can be off */ }
+    }));
+    // Back and Forward can show the page from the cache, with the line still
+    // under the link that was clicked. Put it back under this page, with no motion.
+    window.addEventListener('pageshow', (e) => {
+      if (!e.persisted) return;
+      document.documentElement.classList.remove('page-enter');
+      place(home);
+    });
+    items.forEach((a) => {
+      a.addEventListener('pointerenter', () => to(a));
+      a.addEventListener('focus', () => to(a));
+    });
+    navEl.addEventListener('pointerleave', () => to(home));
+    navEl.addEventListener('focusout', (e) => { if (!navEl.contains(e.relatedTarget as Node)) to(home); });
+    window.addEventListener('resize', () => place(home));
+  }
+
+  // Section marker: a short vertical tick in the left margin glides down (along its
+  // own direction) to the section that you read, like the needle of a gauge.
+  const sections = [...document.querySelectorAll<HTMLElement>('main [data-section]')];
+  const mainEl = document.querySelector('main');
+  if (sections.length > 1 && mainEl) {
+    const tick = document.createElement('span');
+    tick.className = 'section-tick';
+    tick.setAttribute('aria-hidden', 'true');
+    mainEl.append(tick);
+    let frame = 0;
+    const place = () => {
+      const mainBox = mainEl.getBoundingClientRect();
+      const left = Math.min(...sections.map((s) => s.getBoundingClientRect().left)) - mainBox.left - 32;
+      const line = window.innerHeight * 0.35;
+      let cur = sections[0];
+      for (const s of sections) if (s.getBoundingClientRect().top <= line) cur = s;
+      tick.style.left = `${Math.max(8, left)}px`;
+      // Beside the top of the section, but never under the sticky header.
+      const box = cur.getBoundingClientRect();
+      const top = Math.min(Math.max(box.top, 96), box.bottom - 32);
+      tick.style.setProperty('--y', `${(top - mainBox.top).toFixed(1)}px`);
+      tick.classList.toggle('show', left > 16);
+    };
+    const queue = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(place); };
+    window.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('resize', queue);
+    place();
+  }
+
   // Show a hairline under the header after the page scrolls.
   const header = document.querySelector('.site-header');
   const onScroll = () => header?.classList.toggle('scrolled', window.scrollY > 8);
   onScroll();
   window.addEventListener('scroll', onScroll, { passive: true });
+
+  // Film loops play with no sound. When the visitor asks for less motion, they stay still.
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.querySelectorAll<HTMLVideoElement>('video[data-loop]').forEach((v) => {
+      v.removeAttribute('autoplay');
+      v.pause();
+    });
+  }
+
+  // Text links: the flat underline bends up into a ridgeline on hover.
+  // Each link gets its own ridge, drawn at its real pixel width (no stretch, no blur).
+  // Both shapes have the same points; only the height of each point changes.
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SVG = 'http://www.w3.org/2000/svg';
+  const BASE = 6.5; // the flat line, 0.5px from the bottom of a 7px box
+  const ease = (t: number) => 1 - Math.pow(1 - t, 4);
+  const bendOff = new WeakMap<HTMLAnchorElement, AbortController>();
+  const bendLink = (a: HTMLAnchorElement, seed: number) => {
+    if (a.getClientRects().length !== 1) return; // a link that wraps keeps the flat line
+    const w = a.getBoundingClientRect().width;
+    if (w < 24) return;
+    // A seeded ridge like the one on the home page rows: long hills with
+    // smaller peaks on top, 0 to 5.5px high. The ends taper down to the line.
+    let r = seed;
+    const rnd = () => ((r = (r * 16807) % 2147483647) / 2147483647);
+    const n = Math.max(4, Math.round(w / 5));
+    const xs: number[] = [];
+    const hs: number[] = [];
+    const a1 = rnd() * 6;
+    const a2 = rnd() * 6;
+    for (let i = 0; i <= n; i++) {
+      const x = (i / n) * w;
+      const edge = Math.min(1, x / 14, (w - x) / 14);
+      const h = 2.4 + Math.sin(x / 19 + a1) * 1.6 + Math.sin(x / 6.5 + a2) * 1.2 + (rnd() - 0.5) * 0.6;
+      xs.push(+x.toFixed(2));
+      hs.push(Math.max(0, Math.min(5.5, h * edge)));
+    }
+    const svg = document.createElementNS(SVG, 'svg');
+    svg.setAttribute('class', 'bend-line');
+    svg.setAttribute('viewBox', `0 0 ${w.toFixed(2)} 7`);
+    svg.setAttribute('aria-hidden', 'true');
+    const path = document.createElementNS(SVG, 'path');
+    svg.append(path);
+    const draw = (p: number) => {
+      // Each point lifts a little after the one to its left, so the bend travels along the line.
+      let d = '';
+      for (let i = 0; i <= n; i++) {
+        const k = ease(Math.min(1, Math.max(0, (p * 1.35 - (i / n) * 0.35))));
+        d += `${i ? 'L' : 'M'}${xs[i]} ${(BASE - hs[i] * k).toFixed(2)}`;
+      }
+      path.setAttribute('d', d);
+    };
+    draw(0);
+    a.classList.add('bend');
+    a.append(svg);
+
+    let p = 0;
+    let target = 0;
+    let last = 0;
+    let frame = 0;
+    const step = (now: number) => {
+      const dt = last ? now - last : 16;
+      last = now;
+      const speed = target > p ? 1 / 420 : 1 / 320; // ms: up 0.42s, down 0.32s
+      p = target > p ? Math.min(target, p + dt * speed) : Math.max(target, p - dt * speed);
+      draw(p);
+      frame = p === target ? 0 : requestAnimationFrame(step);
+    };
+    const go = (to: number) => {
+      target = to;
+      if (calm) { p = to; draw(p); return; }
+      if (!frame) { last = 0; frame = requestAnimationFrame(step); }
+    };
+    const off = new AbortController();
+    bendOff.set(a, off);
+    const o = { signal: off.signal };
+    a.addEventListener('pointerenter', () => go(1), o);
+    a.addEventListener('pointerleave', () => { if (document.activeElement !== a) go(0); }, o);
+    a.addEventListener('focus', () => go(1), o);
+    a.addEventListener('blur', () => go(0), o);
+  };
+  const bendAll = () => {
+    document.querySelectorAll<HTMLAnchorElement>('main a:not([class]), main a.bend').forEach((a, i) => {
+      bendOff.get(a)?.abort();
+      a.querySelector(':scope > .bend-line')?.remove();
+      a.classList.remove('bend');
+      bendLink(a, 1000 + i * 977 + a.textContent!.length * 31);
+    });
+  };
+  bendAll();
+  let resizeTimer = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(bendAll, 200);
+  });
 
   // Content fades up when it comes into view. Items in the same group start one after the other.
   const items = document.querySelectorAll<HTMLElement>(
@@ -213,12 +432,12 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
           seen.unobserve(entry.target);
         }
       },
-      { rootMargin: '0px 0px -8% 0px' },
+      { rootMargin: '0px 0px -4% 0px' },
     );
     items.forEach((el) => {
       if (!el.style.getPropertyValue('--delay')) {
         const index = Array.prototype.indexOf.call(el.parentElement?.children ?? [], el);
-        el.style.setProperty('--delay', `${Math.min(Math.max(index, 0), 5) * 0.07}s`);
+        el.style.setProperty('--delay', `${Math.min(Math.max(index, 0), 4) * 0.05}s`);
       }
       el.classList.add('reveal');
       seen.observe(el);

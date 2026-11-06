@@ -1,0 +1,64 @@
+---
+// A photo (or a short silent film loop) with a field-note caption.
+// Astro makes AVIF and WebP files in the correct sizes for each screen.
+import { Picture } from 'astro:assets';
+import type { Media } from '../data/media';
+
+interface Props {
+  media: Media;
+  /** Number shown in the caption, for example 3 shows "No. 03". */
+  index?: number;
+  /** CSS aspect ratio of the frame, for example "4 / 5". */
+  ratio?: string;
+  sizes?: string;
+  eager?: boolean;
+  class?: string;
+  style?: string;
+}
+
+const { media, index, ratio, sizes = '100vw', eager = false, class: className, style } = Astro.props;
+const num = index !== undefined ? `No. ${String(index).padStart(2, '0')}` : '';
+const caption = [num, media.note].filter(Boolean).join(' · ');
+---
+
+<figure class:list={['photo', className]} style={style}>
+  <div class="frame" style={ratio ? `aspect-ratio: ${ratio}` : undefined}>
+    {
+      media.video ? (
+        <video
+          src={media.video}
+          poster={media.image.src}
+          muted
+          loop
+          playsinline
+          autoplay
+          preload="metadata"
+          aria-label={media.alt}
+          data-loop
+        />
+      ) : (
+        <Picture
+          src={media.image}
+          alt={media.alt}
+          formats={['avif', 'webp']}
+          widths={[480, 800, 1200, 1600, 2000].filter((w) => w <= media.image.width)}
+          sizes={sizes}
+          loading={eager ? 'eager' : 'lazy'}
+          fetchpriority={eager ? 'high' : 'auto'}
+        />
+      )
+    }
+  </div>
+  {
+    (caption || media.placeholder) && (
+      <figcaption class="label">
+        <span>{caption}</span>
+        {media.placeholder && <span class="ph">Placeholder</span>}
+      </figcaption>
+    )
+  }
+</figure>
+
+<style>
+  .ph { color: var(--gold); }
+</style>

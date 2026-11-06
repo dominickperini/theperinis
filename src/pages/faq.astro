@@ -9,19 +9,25 @@ import { faq } from '../data/wedding';
       <p class="eyebrow">FAQ</p>
       <h1>Questions and answers</h1>
     </div>
-    {
-      faq.map((item) => (
-        <details class="card">
-          <summary>{item.q}</summary>
-          <p>{item.a}</p>
-        </details>
-      ))
-    }
+    <div class="faq">
+      <span class="marker" aria-hidden="true"></span>
+      {
+        faq.map((item) => (
+          <details class="q">
+            <summary>{item.q}</summary>
+            <p>{item.a}</p>
+          </details>
+        ))
+      }
+    </div>
   </div>
 </Layout>
 
 <style>
-  details { padding: 20px 24px; margin-bottom: 12px; }
+  /* Plain questions between hairlines. A thin moss line glides beside the question
+     that you point at or open (it moves up and down, along its own direction). */
+  .faq { position: relative; border-top: 1px solid var(--line); }
+  .q { border-bottom: 1px solid var(--line); padding: 0 0 0 20px; }
   summary {
     cursor: pointer;
     list-style: none;
@@ -29,7 +35,8 @@ import { faq } from '../data/wedding';
     justify-content: space-between;
     align-items: center;
     gap: 16px;
-    font-family: var(--display);
+    padding: 20px 0;
+    font-family: var(--sans);
     font-size: 1.2rem;
     letter-spacing: -0.01em;
   }
@@ -45,6 +52,33 @@ import { faq } from '../data/wedding';
       linear-gradient(currentColor, currentColor) center / 1px 14px no-repeat;
     transition: transform 0.5s var(--ease);
   }
-  details[open] summary::after { transform: rotate(90deg); background-size: 14px 1px, 1px 0; }
-  details p { margin: 12px 0 0; color: var(--muted); }
+  details[open] summary::after { transform: rotate(180deg); background-size: 14px 1px, 1px 0; }
+  details p { margin: 0 0 20px; color: var(--muted); max-width: 60ch; }
+  .marker {
+    position: absolute; left: 0; top: 0; width: 1px; height: 1px; background: var(--accent);
+    transform-origin: top; transform: translateY(var(--y, 0px)) scaleY(var(--h, 0));
+    transition: transform 0.55s var(--glide);
+  }
+  @media (prefers-reduced-motion: reduce) { .marker { transition: none; } }
 </style>
+
+<script>
+  const box = document.querySelector<HTMLElement>('.faq');
+  const marker = box?.querySelector<HTMLElement>('.marker');
+  const qs = [...(box?.querySelectorAll<HTMLDetailsElement>('.q') ?? [])];
+  if (box && marker) {
+    const place = (q?: HTMLElement) => {
+      if (!q) { marker.style.setProperty('--h', '0'); return; }
+      marker.style.setProperty('--y', `${q.offsetTop + 14}px`);
+      marker.style.setProperty('--h', String(Math.max(1, q.offsetHeight - 28)));
+    };
+    const rest = () => place(qs.find((q) => q.open));
+    qs.forEach((q) => {
+      q.addEventListener('pointerenter', () => place(q));
+      q.addEventListener('focusin', () => place(q));
+      q.addEventListener('toggle', () => requestAnimationFrame(() => place(q.open ? q : qs.find((x) => x.open))));
+    });
+    box.addEventListener('pointerleave', rest);
+    window.addEventListener('resize', rest);
+  }
+</script>
