@@ -20,18 +20,20 @@ import { storyPhotos, gallery } from '../data/media';
       <span class="dot" aria-hidden="true"></span>
       {
         story.map((item, i) => (
-          <li class="stop">
+          <li class={storyPhotos[i] ? 'stop' : 'stop no-photo'}>
             <div class="words">
               <p class="label">{item.date}</p>
               <h2>{item.title}</h2>
               {item.text && <p class="muted">{item.text}</p>}
             </div>
-            <Photo
-              media={storyPhotos[i % storyPhotos.length]}
-              ratio="4 / 5"
-              class="reveal"
-              sizes="(min-width: 900px) 40vw, 85vw"
-            />
+            {storyPhotos[i] && (
+              <Photo
+                media={storyPhotos[i]}
+                ratio="4 / 5"
+                class="reveal"
+                sizes="(min-width: 900px) 40vw, 85vw"
+              />
+            )}
           </li>
         ))
       }

@@ -93,9 +93,8 @@ export const hero: Media = { ...byNumber(12), note: 'July 2025' };
 export const fieldNotes: Media[] = [39, 54, 5, 43, 51].map(byNumber);
 
 // One photo for each milestone on the Our Story page, in the same order as
-// `story` in wedding.ts. If there are more milestones than photos, the
-// photos repeat.
-export const storyPhotos: Media[] = [58, 8, 6, 36, 34, 10].map(byNumber);
+// `story` in wedding.ts. Use null for a milestone with no photo.
+export const storyPhotos: (Media | null)[] = [null, 8, 6, 36, 34, 10].map((n) => (n ? byNumber(n) : null));
 
 // Every photo, newest first. Photos with no date go at the end.
 export const gallery: Media[] = [...library].sort((a, b) => (b.date || '0').localeCompare(a.date || '0'));
