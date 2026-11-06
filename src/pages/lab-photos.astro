@@ -1,0 +1,195 @@
+---
+// Test page for the photo album. Not in the menu. Three versions side by side
+// for Dominick to pick from.
+import Layout from '../layouts/Layout.astro';
+import Scatter from '../components/Scatter.astro';
+import { regions, unplaced, coords } from '../data/places';
+import { gallery } from '../data/media';
+import { landPath, project, MAP_W, MAP_H } from '../lib/worldmap';
+
+const markers = regions.map((r) => ({ ...r, ...project(r.lon, r.lat) }));
+---
+
+<Layout title="Photo lab" noindex>
+  <header class="page-title container">
+    <p class="eyebrow">Photo lab</p>
+    <h1>Three albums</h1>
+    <p>Three ways to show the photos. This page is for testing only.</p>
+  </header>
+
+  <!-- A: Map -->
+  <section class="version" aria-labelledby="v-a">
+    <header class="wide head">
+      <p class="label">A</p>
+      <h2 id="v-a">The map</h2>
+      <p class="note muted">Select a place on the map. Its photos show below. The ring glides from place to place.</p>
+    </header>
+
+    <div class="bleed">
+      <div class="map">
+        <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} aria-hidden="true"><path d={landPath} /></svg>
+        <span class="ring" aria-hidden="true"></span>
+        {
+          markers.map((m, i) => (
+            <button
+              type="button"
+              class="pin"
+              data-region={m.id}
+              aria-pressed={i === 0 ? 'true' : 'false'}
+              style={`left: ${(m.x / MAP_W) * 100}%; top: ${(m.y / MAP_H) * 100}%`}
+            >
+              <span class="label">{m.name}</span>
+            </button>
+          ))
+        }
+      </div>
+
+      {
+        markers.map((m, i) => (
+          <div class="region" data-region={m.id} hidden={i !== 0}>
+            <header class="region-head">
+              <h3>{m.name}</h3>
+              <p class="label">{coords(m.lat, m.lon)} &nbsp;·&nbsp; {m.count} {m.count === 1 ? 'photo' : 'photos'}</p>
+              <p class="muted">{m.places.map((p) => p.name).join(' · ')}</p>
+            </header>
+            <Scatter photos={m.places.flatMap((p) => p.photos)} feature={0} offset={i} />
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- B: Journal by place -->
+  <section class="version" aria-labelledby="v-b">
+    <header class="wide head">
+      <p class="label">B</p>
+      <h2 id="v-b">A journal by place</h2>
+      <p class="note muted">One chapter for each place, in a loose layout. A small map shows where it is. Only the first photo of each chapter opens.</p>
+    </header>
+
+    <div class="bleed">
+      {
+        markers.map((m, i) => (
+          <article class="chapter">
+            <header class="chapter-head">
+              <svg class="mini" viewBox={`0 0 ${MAP_W} ${MAP_H}`} aria-hidden="true">
+                <path d={landPath} />
+                <circle cx={m.x} cy={m.y} r="14" />
+              </svg>
+              <div>
+                <p class="label">{coords(m.lat, m.lon)}</p>
+                <h3>{m.name}</h3>
+                <p class="muted">{m.places.map((p) => p.name).join(' · ')}</p>
+              </div>
+            </header>
+            <Scatter photos={m.places.flatMap((p) => p.photos)} feature={99} offset={i * 3} />
+          </article>
+        ))
+      }
+      <article class="chapter">
+        <header class="chapter-head">
+          <div>
+            <p class="label">Somewhere</p>
+            <h3>And everywhere else</h3>
+          </div>
+        </header>
+        <Scatter photos={unplaced} feature={0} offset={2} />
+      </article>
+    </div>
+  </section>
+
+  <!-- C: Loose, by time -->
+  <section class="version" aria-labelledby="v-c">
+    <header class="wide head">
+      <p class="label">C</p>
+      <h2 id="v-c">Loose prints, newest first</h2>
+      <p class="note muted">No places. All photos in a loose layout across the full width. One photo in six opens; the others rise in quietly.</p>
+    </header>
+    <div class="bleed">
+      <Scatter photos={gallery} feature={6} />
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .version { margin: 0 0 clamp(96px, 14vw, 180px); }
+  .head { display: grid; gap: 6px 32px; margin-bottom: 40px; }
+  .head h2 { margin: 0; }
+  .head .note { margin: 0; max-width: 48ch; }
+  @media (min-width: 900px) { .head { grid-template-columns: 1fr 6fr 5fr; align-items: baseline; } }
+  .head { border-top: 1px solid var(--text); padding-top: 18px; max-width: calc(var(--wide) - 2 * var(--gutter)); }
+
+  .bleed { max-width: 1600px; margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* ---------- A: map ---------- */
+  .map { position: relative; margin: 0 0 56px; }
+  .map svg { display: block; width: 100%; height: auto; overflow: hidden; }
+  .map path, .mini path { fill: color-mix(in srgb, var(--text) 9%, transparent); }
+  .pin {
+    position: absolute; transform: translate(-50%, -50%);
+    width: 28px; height: 28px; padding: 0; border: 0; background: none; cursor: pointer;
+  }
+  .pin::before {
+    content: ''; position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px;
+    border-radius: 50%; background: var(--text); transition: background 0.3s var(--ease);
+  }
+  .pin .label {
+    position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, 4px);
+    white-space: nowrap; opacity: 0; transition: opacity 0.3s var(--ease), transform 0.4s var(--glide);
+    font-size: 0.68rem;
+  }
+  .pin:is(:hover, :focus-visible, [aria-pressed='true']) .label { opacity: 1; transform: translate(-50%, 0); }
+  .pin[aria-pressed='true']::before { background: var(--accent); }
+  /* The ring glides to the selected place, like the timeline dot. */
+  .ring {
+    position: absolute; left: 0; top: 0; width: 22px; height: 22px; margin: -11px 0 0 -11px;
+    border: 1px solid var(--accent); border-radius: 50%; pointer-events: none;
+    transition: transform 0.7s var(--glide);
+  }
+  .region-head { display: grid; gap: 4px; margin: 0 0 32px; }
+  .region-head h3, .chapter-head h3 {
+    font-family: var(--display); font-weight: 400; font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -0.01em; margin: 0;
+  }
+  .region-head p, .chapter-head p { margin: 0; }
+  .region:not([hidden]) { animation: region-in 0.6s var(--glide) both; }
+  @keyframes region-in { from { opacity: 0; transform: translateY(12px); } }
+
+  /* ---------- B: journal ---------- */
+  .chapter { margin: 0 0 clamp(80px, 10vw, 140px); }
+  .chapter-head { display: flex; align-items: end; gap: 24px; margin: 0 0 36px; border-top: 1px solid var(--line); padding-top: 20px; }
+  .mini { width: 140px; height: auto; flex: none; }
+  .mini circle { fill: none; stroke: var(--accent); stroke-width: 3; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ring { transition: none; }
+    .region:not([hidden]) { animation: none; }
+  }
+</style>
+
+<script>
+  // Map: select a place. The ring glides to it and the photos change.
+  const map = document.querySelector<HTMLElement>('.map');
+  const ring = map?.querySelector<HTMLElement>('.ring');
+  const pins = [...document.querySelectorAll<HTMLButtonElement>('.map .pin')];
+  const regionsEl = [...document.querySelectorAll<HTMLElement>('.region')];
+  const go = (pin: HTMLButtonElement) => {
+    if (!map || !ring) return;
+    ring.style.transform = `translate(${pin.offsetLeft}px, ${pin.offsetTop}px)`;
+    pins.forEach((p) => p.setAttribute('aria-pressed', String(p === pin)));
+    regionsEl.forEach((r) => {
+      const on = r.dataset.region === pin.dataset.region;
+      r.hidden = !on;
+      if (on) r.querySelectorAll('.drift, .reveal').forEach((el) => el.classList.add('in'));
+    });
+  };
+  if (map && ring && pins.length) {
+    ring.style.transition = 'none';
+    go(pins[0]);
+    requestAnimationFrame(() => requestAnimationFrame(() => (ring.style.transition = '')));
+    pins.forEach((p) => p.addEventListener('click', () => go(p)));
+    window.addEventListener('resize', () => {
+      const cur = pins.find((p) => p.getAttribute('aria-pressed') === 'true');
+      if (cur) { ring.style.transition = 'none'; go(cur); requestAnimationFrame(() => (ring.style.transition = '')); }
+    });
+  }
+</script>

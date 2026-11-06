@@ -1,0 +1,73 @@
+---
+// Photos laid out loosely, like prints on a table: different sizes, some space
+// between them, and a little offset. They use the full page width, not the
+// text column. Only a few photos (`feature`) use the "opening" reveal; the
+// others only rise and fade in.
+import Photo from './Photo.astro';
+import type { Media } from '../data/media';
+
+interface Props {
+  photos: Media[];
+  /** Every Nth photo gets the opening reveal. 0 = none. */
+  feature?: number;
+  /** Start position in the layout pattern, so two groups do not look the same. */
+  offset?: number;
+  class?: string;
+}
+const { photos, feature = 5, offset = 0, class: className } = Astro.props;
+
+// Each place: [first column, last column + 1, top space in px]. On a 12-column grid.
+const pattern: [number, number, number][] = [
+  [1, 6, 0],
+  [7, 10, 96],
+  [10, 13, 24],
+  [2, 5, 40],
+  [6, 11, 0],
+  [1, 4, 120],
+  [5, 8, 32],
+  [9, 13, 72],
+];
+---
+
+<div class:list={['scatter', className]}>
+  {
+    photos.map((m, i) => {
+      const [a, b, top] = pattern[(i + offset) % pattern.length];
+      const big = feature > 0 && i % feature === 0;
+      return (
+        <Photo
+          media={m}
+          class={big ? 'reveal' : 'drift'}
+          style={`--a: ${a}; --b: ${b}; --top: ${top}px; --delay: ${(i % 3) * 0.08}s`}
+          sizes={`(min-width: 900px) ${Math.round(((b - a) / 12) * 100)}vw, 50vw`}
+        />
+      );
+    })
+  }
+</div>
+
+<style>
+  .scatter {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px 16px;
+    align-items: start;
+  }
+  .scatter > :global(.photo) { margin: 0; }
+  .scatter > :global(.photo:nth-child(3n + 1)) { grid-column: 1 / -1; width: 78%; }
+  .scatter > :global(.photo:nth-child(6n + 4)) { justify-self: end; }
+  .scatter > :global(.photo:nth-child(3n + 3)) { margin-top: 40px; }
+  @media (min-width: 900px) {
+    .scatter {
+      grid-template-columns: repeat(12, 1fr);
+      grid-auto-flow: row dense;
+      gap: 56px 24px;
+    }
+    .scatter > :global(.photo) {
+      grid-column: var(--a) / var(--b) !important;
+      width: auto !important;
+      margin-top: var(--top) !important;
+      justify-self: stretch !important;
+    }
+  }
+</style>

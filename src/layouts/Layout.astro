@@ -387,7 +387,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 
   // Content fades up when it comes into view. Items in the same group start one after the other.
   const items = document.querySelectorAll<HTMLElement>(
-    'main .page-title, main .card, main .reveal, main section > h2',
+    'main .page-title, main .card, main .reveal, main .drift, main section > h2',
   );
   if ('IntersectionObserver' in window) {
     const seen = new IntersectionObserver(

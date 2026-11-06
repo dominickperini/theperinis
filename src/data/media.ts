@@ -85,7 +85,7 @@ const library: Media[] = [
   { image: p['p58'], alt: "A kiss on the dance floor.", note: "November 2022", date: "2022-11-06" },
   { image: p['p59'], alt: "Dancing in a busy hall.", note: "November 2022", date: "2022-11-06" },
 ];
-const byNumber = (n: number) => library[n - 1];
+export const byNumber = (n: number) => library[n - 1];
 
 export const hero: Media = { ...byNumber(12), note: 'July 2025' };
 
