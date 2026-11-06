@@ -13,8 +13,10 @@ interface Props {
   /** Start position in the layout pattern, so two groups do not look the same. */
   offset?: number;
   class?: string;
+  /** Extra data-* attributes for each photo, in the same order. */
+  data?: (Record<string, string> | undefined)[];
 }
-const { photos, feature = 5, offset = 0, class: className } = Astro.props;
+const { photos, feature = 5, offset = 0, class: className, data = [] } = Astro.props;
 
 // Each place: [first column, last column + 1, top space in px]. On a 12-column grid.
 const pattern: [number, number, number][] = [
@@ -37,6 +39,7 @@ const pattern: [number, number, number][] = [
       return (
         <Photo
           media={m}
+          data={data[i]}
           class={big ? 'reveal' : 'drift'}
           style={`--a: ${a}; --b: ${b}; --top: ${top}px; --delay: ${(i % 3) * 0.08}s`}
           sizes={`(min-width: 900px) ${Math.round(((b - a) / 12) * 100)}vw, 50vw`}

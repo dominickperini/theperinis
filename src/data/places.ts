@@ -57,3 +57,7 @@ export const regions = [...new Set(places.map((p) => p.region))].map((region) =>
 /** "39.7° N · 105.0° W" */
 export const coords = (lat: number, lon: number) =>
   `${Math.abs(lat).toFixed(1)}° ${lat >= 0 ? 'N' : 'S'} · ${Math.abs(lon).toFixed(1)}° ${lon >= 0 ? 'E' : 'W'}`;
+
+/** The place of a photo, or undefined. */
+const byMedia = new Map<Media, Place>(places.flatMap((p) => p.photos.map((m) => [m, p] as [Media, Place])));
+export const placeOf = (m: Media) => byMedia.get(m);

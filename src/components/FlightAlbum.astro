@@ -1,0 +1,195 @@
+---
+// The photo album with a small map that stays at the top while you scroll.
+// A small plane flies to the place of the photo that you point at, or of the
+// photo in the middle of the screen, and lands there.
+import Scatter from './Scatter.astro';
+import { gallery } from '../data/media';
+import { placeOf, coords } from '../data/places';
+import { landPath, project, MAP_W, MAP_H } from '../lib/worldmap';
+
+const data = gallery.map((m) => {
+  const p = placeOf(m);
+  if (!p) return undefined;
+  const { x, y } = project(p.lon, p.lat);
+  return {
+    x: ((x / MAP_W) * 100).toFixed(2),
+    y: ((y / MAP_H) * 100).toFixed(2),
+    place: p.name === p.region ? p.name : `${p.name}, ${p.region}`,
+    coords: coords(p.lat, p.lon),
+  };
+});
+---
+
+<div class="flight">
+  <div class="board" aria-hidden="true">
+    <div class="mini-map">
+      <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`}><path d={landPath} /></svg>
+      <span class="plane">
+        <span class="body">
+          <svg viewBox="0 0 24 24"><path d="M12 2c.8 0 1.3.9 1.3 2v5.2l7.7 4.5v2l-7.7-2.3v4.8l2.3 1.7V21L12 20l-3.6 1v-1.1l2.3-1.7v-4.8L3 15.7v-2l7.7-4.5V4c0-1.1.5-2 1.3-2z" /></svg>
+        </span>
+      </span>
+    </div>
+    <div class="where">
+      <p class="label coords">&nbsp;</p>
+      <p class="place">Where we have been</p>
+    </div>
+  </div>
+  <Scatter photos={gallery} data={data} feature={7} />
+</div>
+
+<style>
+  .board {
+    position: sticky;
+    top: 70px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 12px 0;
+    margin: 0 0 40px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .mini-map { position: relative; width: clamp(150px, 22vw, 260px); flex: none; }
+  .mini-map > svg { display: block; width: 100%; height: auto; }
+  .mini-map > svg path { fill: color-mix(in srgb, var(--text) 12%, transparent); }
+  .where p { margin: 0; }
+  .place {
+    font-family: var(--display);
+    font-size: clamp(1.4rem, 2.6vw, 2rem);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    transition: opacity 0.25s var(--ease);
+  }
+  .where.swap .place, .where.swap .coords { opacity: 0; }
+  .coords { transition: opacity 0.25s var(--ease); }
+
+  /* The plane: the outer part moves (glides), the inner part turns and lifts. */
+  .plane {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    transform: translate(var(--px, 50%), var(--py, 50%));
+    transition: transform 1.1s var(--glide), opacity 0.4s var(--ease);
+  }
+  .plane.on { opacity: 1; }
+  .body {
+    position: absolute;
+    left: -9px;
+    top: -9px;
+    width: 18px;
+    height: 18px;
+    transform: rotate(var(--turn, 0deg)) scale(1);
+    transition: transform 0.35s var(--ease);
+  }
+  .plane.flying .body { transform: rotate(var(--turn, 0deg)) scale(1.35); transition: transform 0.35s var(--ease); }
+  .body svg { display: block; width: 100%; height: 100%; fill: var(--accent); }
+  /* After it lands, a soft ring marks the place. */
+  .plane::after {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: -8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid var(--accent);
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  .plane.landed::after { animation: touch 0.9s var(--ease); }
+  @keyframes touch {
+    0% { opacity: 0.8; transform: scale(0.4); }
+    100% { opacity: 0; transform: scale(1.8); }
+  }
+  @media (max-width: 819px) { .board { top: 60px; } }
+  @media (prefers-reduced-motion: reduce) {
+    .plane, .body { transition: none; }
+    .plane.landed::after { animation: none; }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.flight').forEach((root) => {
+    const map = root.querySelector<HTMLElement>('.mini-map');
+    const plane = root.querySelector<HTMLElement>('.plane');
+    const where = root.querySelector<HTMLElement>('.where');
+    const placeEl = root.querySelector<HTMLElement>('.place');
+    const coordsEl = root.querySelector<HTMLElement>('.coords');
+    const photos = [...root.querySelectorAll<HTMLElement>('.photo')];
+    if (!map || !plane || !where || !placeEl || !coordsEl) return;
+
+    let cur: { x: number; y: number } | null = null;
+    let label = '';
+    let landTimer = 0;
+    const show = (text: string, sub: string) => {
+      if (text === label) return;
+      label = text;
+      where.classList.add('swap');
+      setTimeout(() => {
+        placeEl.textContent = text;
+        coordsEl.textContent = sub || ' ';
+        where.classList.remove('swap');
+      }, 200);
+    };
+    const fly = (el: HTMLElement) => {
+      const x = Number(el.dataset.x);
+      const y = Number(el.dataset.y);
+      if (!el.dataset.place) { show('Somewhere along the way', ''); return; }
+      show(el.dataset.place, el.dataset.coords ?? '');
+      if (cur && cur.x === x && cur.y === y) return;
+      const w = map.clientWidth;
+      const h = map.clientHeight;
+      if (cur) {
+        // Turn the nose to the new place (the icon points up).
+        const turn = (Math.atan2((y - cur.y) * h, (x - cur.x) * w) * 180) / Math.PI + 90;
+        plane.style.setProperty('--turn', `${turn.toFixed(1)}deg`);
+        plane.classList.add('flying');
+        plane.classList.remove('landed');
+        clearTimeout(landTimer);
+        landTimer = window.setTimeout(() => {
+          plane.classList.remove('flying');
+          plane.classList.add('landed');
+        }, 950);
+      }
+      plane.style.setProperty('--px', `${(x / 100) * w}px`);
+      plane.style.setProperty('--py', `${(y / 100) * h}px`);
+      plane.classList.add('on');
+      cur = { x, y };
+    };
+
+    // Point at a photo: fly there.
+    let hovering = false;
+    photos.forEach((p) => {
+      p.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') { hovering = true; fly(p); } });
+      p.addEventListener('pointerleave', () => { hovering = false; });
+    });
+
+    // Scroll: fly to the photo nearest the middle of the screen.
+    let frame = 0;
+    const pick = () => {
+      if (hovering) return;
+      const mid = window.innerHeight * 0.55;
+      let best: HTMLElement | undefined;
+      let d = Infinity;
+      for (const p of photos) {
+        const r = p.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > window.innerHeight) continue;
+        const dist = Math.abs(r.top + r.height / 2 - mid);
+        if (dist < d) { d = dist; best = p; }
+      }
+      if (best) fly(best);
+    };
+    window.addEventListener('scroll', () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(pick); }, { passive: true });
+    window.addEventListener('resize', () => {
+      if (!cur) return;
+      plane.style.setProperty('--px', `${(cur.x / 100) * map.clientWidth}px`);
+      plane.style.setProperty('--py', `${(cur.y / 100) * map.clientHeight}px`);
+    });
+    pick();
+  });
+</script>

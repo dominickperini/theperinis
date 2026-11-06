@@ -3,6 +3,7 @@
 // for Dominick to pick from.
 import Layout from '../layouts/Layout.astro';
 import Scatter from '../components/Scatter.astro';
+import FlightAlbum from '../components/FlightAlbum.astro';
 import { regions, unplaced, coords } from '../data/places';
 import { gallery } from '../data/media';
 import { landPath, project, MAP_W, MAP_H } from '../lib/worldmap';
@@ -13,9 +14,21 @@ const markers = regions.map((r) => ({ ...r, ...project(r.lon, r.lat) }));
 <Layout title="Photo lab" noindex>
   <header class="page-title container">
     <p class="eyebrow">Photo lab</p>
-    <h1>Three albums</h1>
-    <p>Three ways to show the photos. This page is for testing only.</p>
+    <h1>Four albums</h1>
+    <p>Four ways to show the photos. This page is for testing only.</p>
   </header>
+
+  <!-- D: Plane -->
+  <section class="version" aria-labelledby="v-d">
+    <header class="wide head">
+      <p class="label">D</p>
+      <h2 id="v-d">The plane</h2>
+      <p class="note muted">A small map stays at the top while you scroll. Point at a photo, or scroll to it, and the plane flies there and lands. The name of the place shows beside the map.</p>
+    </header>
+    <div class="bleed">
+      <FlightAlbum />
+    </div>
+  </section>
 
   <!-- A: Map -->
   <section class="version" aria-labelledby="v-a">
