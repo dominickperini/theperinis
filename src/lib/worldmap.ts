@@ -1,23 +1,35 @@
-// A plain world map, drawn once at build time. No map service and no tiles.
-import { geoNaturalEarth1, geoPath } from 'd3-geo';
+// Plain world maps, drawn once at build time. No map service and no tiles.
+import { geoEquirectangular, geoNaturalEarth1, geoPath, type GeoProjection } from 'd3-geo';
 import { feature } from 'topojson-client';
 import land from 'world-atlas/land-110m.json';
 
-export const MAP_W = 1000;
-export const MAP_H = 440;
-
-// Frame the part of the world where our places are.
-const frame = {
-  type: 'Feature',
-  geometry: { type: 'MultiPoint', coordinates: [[-126, 18], [124, 18], [-126, 57], [124, 57]] },
-} as const;
-const projection = geoNaturalEarth1().fitExtent([[10, 10], [MAP_W - 10, MAP_H - 10]], frame as never);
-const path = geoPath(projection);
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const landShape = feature(land as any, (land as any).objects.land);
-export const landPath = path(landShape as never) ?? '';
-export const project = (lon: number, lat: number) => {
-  const p = projection([lon, lat]) ?? [0, 0];
-  return { x: +p[0].toFixed(1), y: +p[1].toFixed(1) };
+
+const make = (projection: GeoProjection, w: number, h: number, west: number, east: number, south: number, north: number) => {
+  const frame = {
+    type: 'Feature',
+    geometry: { type: 'MultiPoint', coordinates: [[west, south], [east, south], [west, north], [east, north]] },
+  };
+  projection.fitExtent([[10, 10], [w - 10, h - 10]], frame as never);
+  const path = geoPath(projection);
+  return {
+    w,
+    h,
+    landPath: path(landShape as never) ?? '',
+    project: (lon: number, lat: number) => {
+      const p = projection([lon, lat]) ?? [0, 0];
+      return { x: +p[0].toFixed(1), y: +p[1].toFixed(1) };
+    },
+  };
 };
+
+// The part of the world where our places are.
+const world = make(geoNaturalEarth1(), 1000, 440, -126, 124, 18, 57);
+export const MAP_W = world.w;
+export const MAP_H = world.h;
+export const landPath = world.landPath;
+export const project = world.project;
+
+/** A long, low strip of the same part of the world, for a header band. */
+export const strip = make(geoEquirectangular(), 1000, 170, -126, 124, 18, 57);
