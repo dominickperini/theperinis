@@ -53,14 +53,15 @@ export const normalizeName = (s: string) =>
 /**
  * Invited parties that have the last name as a full word in the party name.
  * A part of a word does not match ("Lee" does not find "Leeson"), so a search
- * shows only the parties of that family.
+ * shows only the parties of that family. With anyStatus, it also finds parties
+ * that did not get an invitation yet (for the save-the-date address form).
  */
-export async function findParties(lastName: string): Promise<Party[]> {
+export async function findParties(lastName: string, { anyStatus = false } = {}): Promise<Party[]> {
   const q = normalizeName(lastName);
   if (q.length < 2) return [];
   const parties = await listParties();
   return parties
-    .filter((p) => p.status !== 'not_invited' && ` ${normalizeName(p.name)} `.includes(` ${q} `))
+    .filter((p) => (anyStatus || p.status !== 'not_invited') && ` ${normalizeName(p.name)} `.includes(` ${q} `))
     .sort((a, b) => a.name.localeCompare(b.name))
     .slice(0, 20);
 }

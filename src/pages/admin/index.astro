@@ -2,6 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import { isAdmin } from '../../lib/auth';
 import { backfill, getSettings, listParties, seatsHeld, stats, type Party } from '../../lib/guests';
+import { listAddresses } from '../../lib/addresses';
 
 export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-store');
@@ -13,12 +14,17 @@ const keyError = Astro.url.searchParams.get('error') === 'key';
 let parties: Party[] = [];
 let s = stats([], { capacity: 0 });
 let next: Party[] = [];
+let withAddress = new Set<string>();
 if (admin) {
   parties = await listParties();
+  withAddress = new Set((await listAddresses()).map((a) => a.code));
   s = stats(parties, await getSettings());
   next = s.aNotInvited === 0 ? backfill(parties, s.open) : [];
 }
 const link = (p: Party) => `${Astro.url.origin}/rsvp?code=${p.code}`;
+const addressLink = (p: Party) => `${Astro.url.origin}/address?code=${p.code}`;
+const aParties = parties.filter((p) => p.list === 'A');
+const aAddresses = aParties.filter((p) => withAddress.has(p.code)).length;
 const statusText = (p: Party) =>
   ({ not_invited: 'Not invited', invited: 'Waiting for reply', attending: `Yes, ${p.attending}`, declined: 'No' })[p.status];
 const lists = [
@@ -51,6 +57,7 @@ const lists = [
             <h1>Guest list</h1>
             <div class="links">
               <a href="/api/admin/guests">Download guest list (CSV)</a>
+              <a href="/api/admin/addresses">Download addresses (CSV)</a>
               <a href="/api/rsvps">Download RSVP answers (CSV)</a>
               <form method="post" action="/api/admin">
                 <input type="hidden" name="action" value="logout" />
@@ -68,11 +75,27 @@ const lists = [
             <div class="tile"><span>{s.attending}</span>Guests coming</div>
             <div class="tile"><span>{s.awaiting}</span>Waiting for reply</div>
             <div class="tile"><span>{s.declined}</span>Said no</div>
+            <div class="tile"><span>{aAddresses}<small> / {aParties.length}</small></span>A-list addresses</div>
           </section>
           <p class="muted small">
             Seats held = all seats of invitations with no reply, plus the guests who said yes. Open seats = guest
             limit minus seats held.
           </p>
+
+          <section class="card">
+            <h2>Save the dates</h2>
+            <p>
+              Send guests this link to collect their mailing addresses: <a href="/address">{Astro.url.origin}/address</a>{' '}
+              <button type="button" class="link copy" data-copy={`${Astro.url.origin}/address`}>Copy link</button>.
+              Guests find their name by last name, the same as the RSVP. Each guest also has a direct link (Address column
+              below). When you have the addresses, download them as a CSV for envelopes or a mail merge.
+            </p>
+            {aParties.length - aAddresses > 0 && (
+              <p class="muted small">
+                No address yet from {aParties.length - aAddresses} A-list {aParties.length - aAddresses === 1 ? 'invitation' : 'invitations'}.
+              </p>
+            )}
+          </section>
 
           <section class="card">
             <h2>Invite next</h2>
@@ -127,6 +150,7 @@ const lists = [
                           <th>Name</th>
                           <th>Seats</th>
                           <th>Status</th>
+                          <th>Address</th>
                           <th>Invitation</th>
                           <th>Change reply</th>
                           <th></th>
@@ -146,6 +170,10 @@ const lists = [
                             </td>
                             <td>{p.seats}{seatsHeld(p) !== p.seats && p.status !== 'not_invited' && <span class="muted"> ({seatsHeld(p)} held)</span>}</td>
                             <td>{statusText(p)}</td>
+                            <td class="nowrap">
+                              {withAddress.has(p.code) ? <span class="have">Received</span> : <span class="muted">None</span>}{' '}
+                              <button type="button" class="link copy" data-copy={addressLink(p)}>Copy link</button>
+                            </td>
                             <td class="nowrap">
                               <code>{p.code}</code>{' '}
                               <button type="button" class="link copy" data-copy={link(p)}>Copy link</button>
@@ -231,6 +259,7 @@ const lists = [
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 8px; }
   .tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; color: var(--muted); font-size: 0.9rem; }
   .tile span { display: block; font-family: var(--display); font-weight: 300; font-size: 2.2rem; color: var(--text); line-height: 1.1; }
+  .tile span small { font-size: 1rem; color: var(--muted); }
   .tile.good span { color: var(--accent); }
   .tile.bad span { color: #a3402c; }
   .small { font-size: 0.85rem; }
@@ -247,7 +276,7 @@ const lists = [
   th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
   th { font-weight: 600; color: var(--muted); font-size: 0.85rem; }
   tr.declined td { color: var(--muted); }
-  tr.attending td:nth-child(4) { color: var(--accent); font-weight: 600; }
+  tr.attending td:nth-child(4), .have { color: var(--accent); font-weight: 600; }
   .nowrap { white-space: nowrap; }
   code { font-size: 0.9rem; letter-spacing: 0.05em; }
   .link { background: none; border: 0; padding: 0; font: inherit; color: var(--accent-dark); text-decoration: underline; cursor: pointer; }
