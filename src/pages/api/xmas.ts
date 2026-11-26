@@ -59,10 +59,9 @@ export const POST: APIRoute = async ({ request }) => {
 
     switch (action) {
       case 'removePerson': {
-        // Only an empty list can be removed, so a wrong tap cannot lose gifts.
+        // The page asks for a second tap before it sends this.
         const id = String(body.id ?? '');
-        const view = await listFor('', id);
-        if (view.gifts.length || view.comments.length) return fail('This list has gifts on it, so we keep it.');
+        if (!(await getPerson(id))) return fail('This person is not on the lists.');
         await removePerson(id);
         break;
       }

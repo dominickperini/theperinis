@@ -541,6 +541,17 @@ const tip = piece(7, 0, 46, 'tip');
     }
   }
 
+  /** At the end of a list: remove the person. A second tap is necessary. */
+  function removeHtml(p: Person) {
+    const own = p.id === me;
+    const ask = own ? 'Remove me and my list' : `Remove ${esc(p.name)} and this list`;
+    const sure = own
+      ? 'Tap again to remove you, your list, and all that you added. You cannot get them back.'
+      : `Tap again to remove ${esc(p.name)}, this list, and all that ${esc(p.name)} added. You cannot get them back.`;
+    const on = confirming === p.id;
+    return `<p class="tools end"><button class="quiet${on ? ' danger' : ''}" type="button" data-act="del-person" data-id="${p.id}">${on ? sure : ask}</button></p>`;
+  }
+
   function viewHtml() {
     $('xmas').classList.toggle('is-empty', !state.people.length);
     $('xmas').classList.toggle('is-picking', picking && state.people.length > 0);
@@ -572,7 +583,8 @@ const tip = piece(7, 0, 46, 'tip');
         <p class="lede">The others see this list and plan in secret. You never see who got what.</p>
         ${sizesHtml(owner, true)}
         ${giftForm(undefined, ownerName)}
-        ${asked.length ? rows(asked) : `<p class="empty">${ICON.spark}<span>Your list is empty. Add your first gift in the box above.</span></p>`}`;
+        ${asked.length ? rows(asked) : `<p class="empty">${ICON.spark}<span>Your list is empty. Add your first gift in the box above.</span></p>`}
+        ${removeHtml(owner)}`;
     }
 
     const got = view.gifts.filter((g) => g.gotBy).length;
@@ -601,7 +613,7 @@ const tip = piece(7, 0, 46, 'tip');
         <h2 class="label">Notes for the others <small>${esc(ownerName)} cannot see them</small></h2>
         ${commentsHtml(listNotes, undefined, 'Write to the others')}
       </section>
-      ${!view.gifts.length && !view.comments.length ? `<p class="tools end"><button class="quiet" type="button" data-act="del-person" data-id="${owner.id}">${confirming === owner.id ? 'Tap again to remove this list' : 'Added by mistake? Remove this list'}</button></p>` : ''}`;
+      ${removeHtml(owner)}`;
   }
 
   // ---------- actions ----------
@@ -724,12 +736,20 @@ const tip = piece(7, 0, 46, 'tip');
       if (confirming !== id) {
         confirming = id;
         render();
-        setTimeout(() => { if (confirming === id) { confirming = ''; render(); } }, 4000);
+        setTimeout(() => { if (confirming === id) { confirming = ''; render(); } }, action === 'del-person' ? 7000 : 4000);
         return;
       }
       confirming = '';
       if (action === 'del-person') {
-        return void call({ action: 'removePerson', id }).then((ok) => { if (ok) { list = me; store.set('xmas-list', list); call(); } });
+        return void call({ action: 'removePerson', id }).then((ok) => {
+          if (!ok) return;
+          if (id === me) { me = ''; store.set('xmas-me', ''); picking = true; boughKey = ''; }
+          list = me;
+          store.set('xmas-list', list);
+          reset();
+          render();
+          call();
+        });
       }
       return void call({ action: action === 'del-gift' ? 'deleteGift' : 'deleteComment', id });
     }
@@ -1136,6 +1156,8 @@ const tip = piece(7, 0, 46, 'tip');
   .xmas .say { margin: 0 0 10px; font-size: 0.88rem; color: var(--muted); }
   .xmas .tools { display: flex; gap: 18px; margin: 6px 0 0; }
   .xmas .tools.end { justify-content: center; }
+  .xmas .tools.end { margin-top: 34px; }
+  .xmas .quiet.danger { color: #8a3a28; text-decoration-color: #b4553f; text-align: center; }
 
   .xmas .comments { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 12px; }
   .xmas .comment { display: flex; gap: 10px; align-items: flex-start; font-size: 0.95rem; }

@@ -78,9 +78,29 @@ export async function renamePerson(id: string, name: string) {
   const p = await getPerson(id);
   if (p) await setItem(PEOPLE, id, { ...p, name });
 }
+/** Removes a person and all that they made: their list, their surprises, their notes and their marks. */
 export async function removePerson(id: string) {
-  for (const g of await getAll<Gift>(GIFTS)) if (g.owner === id) await deleteItem(GIFTS, g.id);
-  for (const c of await getAll<Comment>(COMMENTS)) if (c.owner === id) await deleteItem(COMMENTS, c.id);
+  for (const g of await getAll<Gift>(GIFTS)) {
+    if (g.owner === id || g.addedBy === id) {
+      await deleteItem(GIFTS, g.id);
+      continue;
+    }
+    const before = g.team ?? [];
+    const team = before.filter((t) => t !== id);
+    if (g.gotBy !== id && team.length === before.length) continue;
+    const next: Gift = { ...g, team };
+    if (!team.length) delete next.team;
+    if (g.gotBy === id) {
+      // The others of the team keep the mark. If there are none, the gift is free again.
+      if (team.length) next.gotBy = team[0];
+      else { delete next.gotBy; delete next.gotAt; }
+    }
+    await setItem(GIFTS, g.id, next);
+  }
+  const gifts = new Set((await getAll<Gift>(GIFTS)).map((g) => g.id));
+  for (const c of await getAll<Comment>(COMMENTS)) {
+    if (c.owner === id || c.by === id || (c.gift && !gifts.has(c.gift))) await deleteItem(COMMENTS, c.id);
+  }
   await deleteItem(PEOPLE, id);
 }
 
