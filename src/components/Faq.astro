@@ -1,0 +1,47 @@
+---
+import { faq } from '../data/wedding';
+---
+
+<div class="faq">
+  {
+    faq.map((item) => (
+      <details class="q">
+        <summary>{item.q}</summary>
+        <p>{item.a}</p>
+      </details>
+    ))
+  }
+</div>
+
+<style>
+  /* Plain questions between hairlines. */
+  .faq { border-top: 1px solid var(--line); }
+  .q { border-bottom: 1px solid var(--line); }
+  summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 0;
+    font-family: var(--sans);
+    font-size: 1.2rem;
+    letter-spacing: -0.01em;
+  }
+  summary::-webkit-details-marker { display: none; }
+  /* A plus sign that turns into a minus sign when the answer opens. */
+  summary::after {
+    content: '';
+    flex: none;
+    width: 14px;
+    height: 14px;
+    background:
+      linear-gradient(currentColor, currentColor) center / 14px 1px no-repeat,
+      linear-gradient(currentColor, currentColor) center / 1px 14px no-repeat;
+    transition: transform 0.5s var(--ease);
+  }
+  details[open] summary::after { transform: rotate(180deg); background-size: 14px 1px, 1px 0; }
+  details p { margin: 0 0 20px; color: var(--muted); max-width: 60ch; }
+</style>
+

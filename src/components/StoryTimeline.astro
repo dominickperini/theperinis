@@ -1,21 +1,11 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Photo from '../components/Photo.astro';
+import Photo from './Photo.astro';
 import { story } from '../data/wedding';
-import { storyPhotos, gallery } from '../data/media';
+import { storyPhotos } from '../data/media';
 ---
 
-<Layout title="Our Story">
-  <div class="container">
-    <div class="page-title">
-      <p class="eyebrow">Our Story</p>
-      <h1>How we got here</h1>
-    </div>
-  </div>
-
-  <!-- A timeline. One dot travels along the line and stops at the milestone in the middle of the screen. -->
-  <div class="wide">
-    <ol class="timeline" aria-label="Our story, oldest first">
+<!-- A timeline. One dot travels along the line and stops at the milestone in the middle of the screen. -->
+<ol class="timeline" aria-label="Our story, oldest first">
       <span class="rail" aria-hidden="true"></span>
       <span class="dot" aria-hidden="true"></span>
       {
@@ -23,7 +13,7 @@ import { storyPhotos, gallery } from '../data/media';
           <li class={storyPhotos[i] ? 'stop' : 'stop no-photo'}>
             <div class="words">
               <p class="label">{item.date}</p>
-              <h2>{item.title}</h2>
+              <h3>{item.title}</h3>
               {item.text && <p class="muted">{item.text}</p>}
             </div>
             {storyPhotos[i] && (
@@ -38,18 +28,6 @@ import { storyPhotos, gallery } from '../data/media';
         ))
       }
     </ol>
-  </div>
-
-  <section class="wide album" aria-labelledby="album-title">
-    <header class="album-head ruled">
-      <p class="label">Field notes</p>
-      <h2 id="album-title">Along the way</h2>
-    </header>
-    <div class="album-grid">
-      {gallery.map((m) => <Photo media={m} class="reveal" sizes="(min-width: 900px) 25vw, 50vw" />)}
-    </div>
-  </section>
-</Layout>
 
 <style>
   .timeline { position: relative; list-style: none; margin: 0; padding: 0 0 0 48px; display: grid; gap: clamp(56px, 9vw, 120px); }
@@ -62,7 +40,7 @@ import { storyPhotos, gallery } from '../data/media';
   .words { transition: opacity 0.4s var(--ease); }
   .js .stop:not(.on) .words { opacity: 0.45; }
   .words .label { margin: 0 0 6px; }
-  .words h2 { margin: 0 0 8px; font-size: clamp(1.8rem, 3.4vw, 2.8rem); line-height: 1.05; }
+  .words h3 { font-family: var(--display); font-weight: 400; letter-spacing: -0.01em; margin: 0 0 8px; font-size: clamp(1.8rem, 3.4vw, 2.8rem); line-height: 1.05; }
   .words p.muted { margin: 0; max-width: 40ch; }
   @media (min-width: 900px) {
     .timeline { padding-left: 72px; }
@@ -73,13 +51,6 @@ import { storyPhotos, gallery } from '../data/media';
   }
   @media (prefers-reduced-motion: reduce) { .dot { transition: none; } }
 
-  .album { margin-top: clamp(96px, 14vw, 180px); }
-  .album-head { margin-bottom: 32px; }
-  .album-head h2 { margin: 4px 0 0; }
-  .album-grid { columns: 2 160px; column-gap: 16px; }
-  @media (min-width: 900px) { .album-grid { columns: 4; column-gap: 24px; } }
-  .album-grid :global(.photo) { break-inside: avoid; margin: 0 0 16px; }
-  @media (min-width: 900px) { .album-grid :global(.photo) { margin-bottom: 24px; } }
 </style>
 
 <script>

@@ -1,8 +1,8 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import { isAdmin } from '../../lib/auth';
-import { backfill, getSettings, listParties, seatsHeld, stats, type Party } from '../../lib/guests';
-import { listAddresses } from '../../lib/addresses';
+import Layout from '../../../layouts/Layout.astro';
+import { isAdmin } from '../../../lib/auth';
+import { backfill, getSettings, listParties, seatsHeld, stats, type Party } from '../../../lib/guests';
+import { listAddresses } from '../../../lib/addresses';
 
 export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-store');
@@ -21,8 +21,8 @@ if (admin) {
   s = stats(parties, await getSettings());
   next = s.aNotInvited === 0 ? backfill(parties, s.open) : [];
 }
-const link = (p: Party) => `${Astro.url.origin}/rsvp?code=${p.code}`;
-const addressLink = (p: Party) => `${Astro.url.origin}/address?code=${p.code}`;
+const link = (p: Party) => `${Astro.url.origin}/wedding/rsvp?code=${p.code}`;
+const addressLink = (p: Party) => `${Astro.url.origin}/wedding/address?code=${p.code}`;
 const aParties = parties.filter((p) => p.list === 'A');
 const aAddresses = aParties.filter((p) => withAddress.has(p.code)).length;
 const statusText = (p: Party) =>
@@ -57,6 +57,7 @@ const lists = [
             <h1>Guest list</h1>
             <div class="links">
               <a href="/api/admin/guests">Download guest list (CSV)</a>
+              <a href="/wedding/admin/save-the-dates">Save the dates</a>
               <a href="/api/admin/addresses">Download addresses (CSV)</a>
               <a href="/api/rsvps">Download RSVP answers (CSV)</a>
               <form method="post" action="/api/admin">
@@ -85,10 +86,12 @@ const lists = [
           <section class="card">
             <h2>Save the dates</h2>
             <p>
-              Send guests this link to collect their mailing addresses: <a href="/address">{Astro.url.origin}/address</a>{' '}
-              <button type="button" class="link copy" data-copy={`${Astro.url.origin}/address`}>Copy link</button>.
-              Guests find their name by last name, the same as the RSVP. Each guest also has a direct link (Address column
-              below). When you have the addresses, download them as a CSV for envelopes or a mail merge.
+              Send each invitation a text or an email with its own link to the address form. Open
+              <a href="/wedding/admin/save-the-dates"><strong>Send the save the dates</strong></a> on your phone, then tap
+              Text or Email for each guest. The general link for anybody is{' '}
+              <a href="/wedding/address">{Astro.url.origin}/wedding/address</a>{' '}
+              <button type="button" class="link copy" data-copy={`${Astro.url.origin}/wedding/address`}>Copy link</button>.
+              When you have the addresses, download them as a CSV for envelopes or a mail merge.
             </p>
             {aParties.length - aAddresses > 0 && (
               <p class="muted small">
@@ -166,7 +169,7 @@ const lists = [
                             </td>
                             <td>
                               {p.name}
-                              {p.email && <div class="muted small">{p.email}</div>}
+                              {(p.email || p.phone) && <div class="muted small">{[p.email, p.phone].filter(Boolean).join(' · ')}</div>}
                             </td>
                             <td>{p.seats}{seatsHeld(p) !== p.seats && p.status !== 'not_invited' && <span class="muted"> ({seatsHeld(p)} held)</span>}</td>
                             <td>{statusText(p)}</td>
@@ -222,11 +225,11 @@ const lists = [
             <form method="post" action="/api/admin">
               <input type="hidden" name="action" value="import" />
               <label>
-                One invitation on each line: name, email, list (A or B), seats
-                <textarea name="lines" rows="6" required placeholder={'John and Jane Smith, jane@example.com, A, 2\n"Lee, Sam", , B, 1'}></textarea>
+                One invitation on each line: name, email, list (A or B), seats, phone
+                <textarea name="lines" rows="6" required placeholder={'John and Jane Smith, jane@example.com, A, 2, (303) 555-0100\n"Lee, Sam", , B, 1'}></textarea>
               </label>
               <p class="muted small">
-                You can paste rows from a spreadsheet. The email can be empty. Put a name with a comma in double quotes.
+                You can paste rows from a spreadsheet. The email and phone can be empty. Put a name with a comma in double quotes.
                 The B list order is the order that you add people. Guests find their invitation by last name, so
                 put the last name of each person in the name (for example: John Smith and Jane Lee).
               </p>

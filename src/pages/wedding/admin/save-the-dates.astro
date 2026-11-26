@@ -1,0 +1,215 @@
+---
+// Send the electronic save-the-dates. Each button opens our own Messages or
+// email app with a personal note and the party's own address link, ready to
+// send. The site itself sends nothing. We mark each party as sent here.
+import Layout from '../../../layouts/Layout.astro';
+import { isAdmin } from '../../../lib/auth';
+import { listParties, type Party } from '../../../lib/guests';
+import { listAddresses } from '../../../lib/addresses';
+import { addressLink, emailMessage, mailtoHref, smsHref, subject, textMessage } from '../../../lib/savethedate';
+
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+const admin = isAdmin(Astro.cookies);
+if (!admin) return Astro.redirect('/wedding/admin', 303);
+
+const list = Astro.url.searchParams.get('list') === 'B' ? 'B' : 'A';
+const msg = Astro.url.searchParams.get('msg');
+const all = await listParties();
+const withAddress = new Set((await listAddresses()).map((a) => a.code));
+const parties = all.filter((p) => p.list === list);
+const sent = parties.filter((p) => p.stdSentAt).length;
+const answered = parties.filter((p) => withAddress.has(p.code)).length;
+const noContact = parties.filter((p) => !p.email && !p.phone).length;
+const sample: Party = parties[0] ?? { code: 'ABC123', name: 'John and Jane Smith', email: '', list: 'A', seats: 2, order: 0, status: 'not_invited', attending: 0 };
+const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '');
+---
+
+<Layout title="Save the dates" noindex>
+  <div class="admin">
+    <div class="top">
+      <h1>Save the dates</h1>
+      <div class="links">
+        <a href="/wedding/admin">Back to the guest list</a>
+        <a href={`/api/admin/save-the-dates?list=${list}`}>Download send list (CSV)</a>
+      </div>
+    </div>
+
+    {msg && <p class="card notice" role="status">{msg}</p>}
+
+    <nav class="tabs" aria-label="List">
+      <a href="?list=A" aria-current={list === 'A' ? 'page' : undefined}>A list</a>
+      <a href="?list=B" aria-current={list === 'B' ? 'page' : undefined}>B list</a>
+    </nav>
+
+    <section class="tiles">
+      <div class="tile"><span>{parties.length}</span>Invitations</div>
+      <div class="tile"><span data-sent-count>{sent}</span>Sent</div>
+      <div class="tile good"><span>{answered}</span>Addresses received</div>
+      <div class={`tile ${noContact ? 'bad' : ''}`}><span>{noContact}</span>No email or phone</div>
+    </section>
+
+    <section class="card how">
+      <h2>How it works</h2>
+      <ol>
+        <li>Add an email or a phone number for each invitation (in the table, or paste a list below).</li>
+        <li>Open this page on your phone. Tap <strong>Text</strong> or <strong>Email</strong>. Your Messages or email app opens with the note ready. Tap send.</li>
+        <li>The row is marked as sent. Each guest gets a personal link, so their name is already selected on the form.</li>
+      </ol>
+      <p class="muted small">The website sends nothing by itself. Nothing goes to a guest until you tap send in your own app.</p>
+      <details>
+        <summary>See the message</summary>
+        <p class="label">Text message</p>
+        <pre>{textMessage(sample, Astro.url.origin)}</pre>
+        <p class="label">Email: {subject}</p>
+        <pre>{emailMessage(sample, Astro.url.origin)}</pre>
+        <p class="muted small">The link shows a photo preview in Messages and most email apps. To change the words, change src/lib/savethedate.ts.</p>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>{list} list <small class="muted">{parties.length} invitations</small></h2>
+      {parties.length === 0 ? (
+        <p class="muted">Nobody is on this list yet. Add guests on the <a href="/wedding/admin">guest list</a>.</p>
+      ) : (
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email and phone</th>
+                <th>Send</th>
+                <th>Sent</th>
+                <th>Address</th>
+              </tr>
+            </thead>
+            <tbody>
+              {parties.map((p) => (
+                <tr data-code={p.code} class={p.stdSentAt ? 'is-sent' : ''}>
+                  <td>{p.name}</td>
+                  <td>
+                    <form method="post" action="/api/admin" class="contact">
+                      <input type="hidden" name="action" value="contact" />
+                      <input type="hidden" name="back" value="save-the-dates" />
+                      <input type="hidden" name="code" value={p.code} />
+                      <input name="email" type="email" value={p.email} placeholder="Email" aria-label={`Email for ${p.name}`} />
+                      <input name="phone" type="tel" value={p.phone ?? ''} placeholder="Phone" aria-label={`Phone for ${p.name}`} />
+                      <button class="link" type="submit">Save</button>
+                    </form>
+                  </td>
+                  <td class="nowrap">
+                    {p.phone && <a class="send" href={smsHref(p, Astro.url.origin)} data-send>Text</a>}
+                    {p.email && <a class="send" href={mailtoHref(p, Astro.url.origin)} data-send>Email</a>}
+                    <button type="button" class="link copy" data-copy={textMessage(p, Astro.url.origin)}>Copy</button>
+                  </td>
+                  <td class="nowrap">
+                    <span class="when">{p.stdSentAt ? fmt(p.stdSentAt) : '—'}</span>{' '}
+                    <button type="button" class="link toggle" data-sent={p.stdSentAt ? '1' : '0'}>
+                      {p.stdSentAt ? 'Undo' : 'Mark sent'}
+                    </button>
+                  </td>
+                  <td class="nowrap">
+                    {withAddress.has(p.code) ? <span class="have">Received</span> : <span class="muted">None</span>}
+                    {' '}<a class="muted small" href={addressLink(p, Astro.url.origin)} target="_blank" rel="noopener">Open link</a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+
+    <section class="card">
+      <h2>Paste emails and phone numbers</h2>
+      <form method="post" action="/api/admin">
+        <input type="hidden" name="action" value="contacts" />
+        <input type="hidden" name="back" value="save-the-dates" />
+        <label>
+          One invitation on each line: name (exactly as in the guest list) or invitation code, email, phone
+          <textarea name="lines" rows="5" required placeholder={'John and Jane Smith, jane@example.com, (303) 555-0100\nK7M2QX, , 720-555-0199'}></textarea>
+        </label>
+        <p class="muted small">You can paste rows from a spreadsheet. An empty email or phone keeps the one that we have.</p>
+        <button class="button" type="submit">Save contacts</button>
+      </form>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .admin { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+  .top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .links { display: flex; flex-wrap: wrap; gap: 18px; font-size: 0.95rem; }
+  .tabs { display: flex; gap: 24px; margin: 0 0 20px; }
+  .tabs a { text-decoration: none; color: var(--muted); padding-bottom: 4px; }
+  .tabs a[aria-current='page'] { color: var(--text); border-bottom: 1px solid var(--text); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; color: var(--muted); font-size: 0.9rem; }
+  .tile span { display: block; font-family: var(--display); font-size: 2.2rem; color: var(--text); line-height: 1.1; }
+  .tile.good span { color: var(--accent); }
+  .tile.bad span { color: #a3402c; }
+  h2 small { font-family: var(--sans); font-size: 0.9rem; }
+  .how ol { padding-left: 20px; display: grid; gap: 6px; }
+  pre { white-space: pre-wrap; font: inherit; font-size: 0.95rem; background: var(--bg); border: 1px solid var(--line); padding: 12px 14px; margin: 6px 0 16px; }
+  summary { cursor: pointer; margin: 8px 0; }
+  .small { font-size: 0.85rem; }
+  label { display: grid; gap: 6px; font-weight: 600; font-size: 0.95rem; }
+  input, textarea { font: inherit; font-weight: 400; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+  textarea { width: 100%; font-family: ui-monospace, monospace; font-size: 0.9rem; }
+  .contact { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .contact input { width: 13em; }
+  .contact input[type='tel'] { width: 9em; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-weight: 600; color: var(--muted); font-size: 0.85rem; }
+  tr.is-sent td:first-child { color: var(--accent); }
+  .nowrap { white-space: nowrap; }
+  .send {
+    display: inline-block; margin-right: 8px; padding: 6px 12px; border: 1px solid var(--accent);
+    color: var(--accent); text-decoration: none; border-radius: var(--radius); font-weight: 500;
+  }
+  .send:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .link { background: none; border: 0; padding: 0; font: inherit; color: var(--accent-dark, var(--accent)); text-decoration: underline; cursor: pointer; }
+  .have { color: var(--accent); font-weight: 600; }
+  .notice { border-color: var(--accent); }
+</style>
+
+<script>
+  // Mark a row as sent (or not) without a page reload.
+  const counter = document.querySelector<HTMLElement>('[data-sent-count]');
+  const setSent = async (row: HTMLElement, sent: boolean) => {
+    const body = new FormData();
+    body.set('action', 'std');
+    body.set('ajax', '1');
+    body.set('code', row.dataset.code ?? '');
+    body.set('sent', sent ? '1' : '0');
+    const res = await fetch('/api/admin', { method: 'POST', body });
+    if (!res.ok) return;
+    const was = row.classList.contains('is-sent');
+    row.classList.toggle('is-sent', sent);
+    const when = row.querySelector<HTMLElement>('.when');
+    const btn = row.querySelector<HTMLButtonElement>('.toggle');
+    if (when) when.textContent = sent ? new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+    if (btn) { btn.dataset.sent = sent ? '1' : '0'; btn.textContent = sent ? 'Undo' : 'Mark sent'; }
+    if (counter && was !== sent) counter.textContent = String(Number(counter.textContent) + (sent ? 1 : -1));
+  };
+  document.querySelectorAll<HTMLTableRowElement>('tr[data-code]').forEach((row) => {
+    // Opening Messages or email marks the row as sent. Use Undo if you did not send it.
+    row.querySelectorAll<HTMLAnchorElement>('[data-send]').forEach((a) =>
+      a.addEventListener('click', () => { if (!row.classList.contains('is-sent')) setSent(row, true); }),
+    );
+    row.querySelector<HTMLButtonElement>('.toggle')?.addEventListener('click', (e) => {
+      const b = e.currentTarget as HTMLButtonElement;
+      setSent(row, b.dataset.sent !== '1');
+    });
+  });
+  document.querySelectorAll<HTMLButtonElement>('.copy').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(btn.dataset.copy ?? ''); btn.textContent = 'Copied'; }
+      catch { window.prompt('Copy this message:', btn.dataset.copy ?? ''); }
+      setTimeout(() => (btn.textContent = 'Copy'), 1500);
+    });
+  });
+</script>
