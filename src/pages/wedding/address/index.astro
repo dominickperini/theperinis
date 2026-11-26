@@ -1,8 +1,10 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import { wedding } from '../../data/wedding';
-import { findParties, getParty, normalizeCode, type Party } from '../../lib/guests';
-import { getAddress } from '../../lib/addresses';
+import Layout from '../../../layouts/Layout.astro';
+import Photo from '../../../components/Photo.astro';
+import { wedding } from '../../../data/wedding';
+import { hero } from '../../../data/media';
+import { findParties, getParty, normalizeCode, type Party } from '../../../lib/guests';
+import { getAddress } from '../../../lib/addresses';
 
 export const prerender = false;
 
@@ -40,24 +42,44 @@ const messages: Record<string, string> = {
 let error = errorCode ? (messages[errorCode] ?? messages.server) : '';
 if (!error && lookupFailed) error = messages.server;
 else if (!error && code && !party) error = messages.code;
+const [weekday, ...rest] = wedding.date.split(', ');
+const day = rest.join(', ');
 const contact = wedding.contactEmail && !wedding.contactEmail.startsWith('[') ? wedding.contactEmail : '';
 
 Astro.response.headers.set('Cache-Control', 'no-store');
 ---
 
-<Layout title="Save the date" description={`Send ${wedding.couple.first} and ${wedding.couple.second} your mailing address.`} noindex>
-  <div class="container">
-    <div class="page-title">
-      <p class="eyebrow">Save the date</p>
-      <h1>Where can we send it?</h1>
-      <p>We are getting married on {wedding.date}. Tell us your mailing address, and we will send you a save the date and an invitation.</p>
+<Layout
+  title="Save the date"
+  description={`${wedding.couple.first} and ${wedding.couple.second} are getting married on ${wedding.date}. Send us your mailing address for the invitation.`}
+  noindex
+>
+  <!-- The electronic save-the-date. Guests come here from our text or email. -->
+  <section class="std wide" aria-labelledby="std-title">
+    <Photo media={hero} eager ratio="4 / 5" class="std-photo" sizes="(min-width: 900px) 40vw, 90vw" />
+    <div class="std-words">
+      <p class="eyebrow">{party ? `For ${party.name}` : 'Save the date'}</p>
+      <h1 id="std-title" class="std-names">
+        <span>{wedding.couple.first}</span>
+        <span><em>&amp;</em> {wedding.couple.second}</span>
+      </h1>
+      <p class="std-lead">are getting married</p>
+      <dl class="std-specs">
+        <div><dt class="label">Date</dt><dd>{day}<br /><span class="muted">{weekday}</span></dd></div>
+        <div><dt class="label">Place</dt><dd>{wedding.venue.name}<br /><span class="muted">{wedding.city}</span></dd></div>
+      </dl>
+      <p class="muted">A printed invitation will follow. Please tell us where to send it.</p>
     </div>
+  </section>
+
+  <div class="container">
+    <h2 class="form-title" id="address-title">Where can we send your invitation?</h2>
 
     {error && <p class="error card" role="alert">{error}</p>}
 
     {
       !party && (
-        <form class="card" method="get" action="/address" role="search">
+        <form class="card" method="get" action="/wedding/address" role="search">
           <label>
             Your last name
             <input name="last" required minlength="2" maxlength="60" value={last} autocomplete="family-name" />
@@ -74,7 +96,7 @@ Astro.response.headers.set('Cache-Control', 'no-store');
           <ul>
             {matches.map((p) => (
               <li>
-                <a href={`/address?code=${p.code}`}>
+                <a href={`/wedding/address?code=${p.code}`}>
                   <strong>{p.name}</strong>
                 </a>
               </li>
@@ -150,13 +172,37 @@ Astro.response.headers.set('Cache-Control', 'no-store');
         </label>
 
         <button class="button" type="submit">Send my address</button>
-        <p class="muted small"><a href="/address">This is not my name.</a></p>
+        <p class="muted small"><a href="/wedding/address">This is not my name.</a></p>
       </form>
     )}
   </div>
 </Layout>
 
 <style>
+  /* ---------- The save-the-date card ---------- */
+  .std { display: grid; gap: 28px; align-items: center; margin: 0 auto clamp(56px, 8vw, 96px); }
+  @media (min-width: 860px) { .std { grid-template-columns: 5fr 6fr; gap: 64px; } }
+  .std :global(.std-photo) { margin: 0; max-width: 520px; }
+  .std-words .eyebrow { color: var(--accent); margin: 0 0 14px; }
+  .std-names {
+    font-size: clamp(3.2rem, 9vw, 6.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .std-names span { display: block; animation: std-rise 0.9s var(--glide) both; }
+  .std-names span + span { animation-delay: 0.1s; }
+  .std-names em { font-family: var(--serif); font-style: italic; color: var(--accent); }
+  @keyframes std-rise { from { opacity: 0; transform: translateY(18px); } }
+  .std-lead { font-size: 1.2rem; color: var(--muted); margin: 10px 0 24px; }
+  .std-specs { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--text); margin: 0 0 20px; max-width: 460px; }
+  .std-specs > div { padding: 14px 16px 14px 0; }
+  .std-specs > div + div { border-left: 1px solid var(--line); padding-left: 16px; }
+  .std-specs dt { margin: 0 0 6px; }
+  .std-specs dd { margin: 0; line-height: 1.4; }
+  .form-title { font-size: clamp(1.8rem, 4vw, 2.4rem); margin: 0 0 20px; }
+  @media (prefers-reduced-motion: reduce) { .std-names span { animation: none; } }
+
   form { display: grid; gap: 20px; }
   label { display: grid; gap: 6px; font-weight: 600; font-size: 0.95rem; }
   input {

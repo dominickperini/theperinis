@@ -1,12 +1,12 @@
 ---
 // Test page for the photo album. Not in the menu. Three versions side by side
 // for Dominick to pick from.
-import Layout from '../layouts/Layout.astro';
-import Scatter from '../components/Scatter.astro';
-import FlightAlbum from '../components/FlightAlbum.astro';
-import { regions, unplaced, coords } from '../data/places';
-import { gallery } from '../data/media';
-import { landPath, project, MAP_W, MAP_H } from '../lib/worldmap';
+import Layout from '../../layouts/Layout.astro';
+import Scatter from '../../components/Scatter.astro';
+import FlightAlbum from '../../components/FlightAlbum.astro';
+import { regions, unplaced, coords } from '../../data/places';
+import { gallery } from '../../data/media';
+import { landPath, project, MAP_W, MAP_H } from '../../lib/worldmap';
 
 const markers = regions.map((r) => ({ ...r, ...project(r.lon, r.lat) }));
 ---

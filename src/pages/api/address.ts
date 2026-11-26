@@ -9,10 +9,10 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const form = await request.formData();
 
   // Bots fill in the hidden "website" field. People do not see it.
-  if (form.get('website')) return redirect('/address/thanks', 303);
+  if (form.get('website')) return redirect('/wedding/address/thanks', 303);
 
   const code = String(form.get('code') ?? '');
-  const back = (error: string) => redirect(`/address?code=${encodeURIComponent(code)}&error=${error}`, 303);
+  const back = (error: string) => redirect(`/wedding/address?code=${encodeURIComponent(code)}&error=${error}`, 303);
   if (!storageReady()) {
     console.error('Storage is not set up. Add Upstash for Redis in Vercel.');
     return back('server');
@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     // Keep the email on the party too, if we do not have one yet.
     if (address.email && !party.email) await saveParty({ ...party, email: address.email });
 
-    return redirect('/address/thanks', 303);
+    return redirect('/wedding/address/thanks', 303);
   } catch (err) {
     console.error('Could not save the address', err);
     return back('server');

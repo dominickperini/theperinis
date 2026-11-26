@@ -6,9 +6,17 @@ interface Props {
   title?: string;
   description?: string;
   noindex?: boolean;
+  /** Picture for link previews in texts, email and social apps. */
+  image?: string;
 }
 
-const { title, noindex = false, description = `The wedding of ${wedding.couple.first} and ${wedding.couple.second}.` } = Astro.props;
+const {
+  title,
+  noindex = false,
+  description = `The wedding of ${wedding.couple.first} and ${wedding.couple.second}.`,
+  image = '/og.jpg',
+} = Astro.props;
+const site = Astro.site ?? Astro.url;
 const names = `${wedding.couple.first} & ${wedding.couple.second}`;
 const fullTitle = title ? `${title} | ${names}` : names;
 // Optional: an Adobe Fonts web project with IvyPresto Headline (the Marathon serif).
@@ -28,6 +36,12 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     {noindex && <meta name="robots" content="noindex" />}
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={new URL(Astro.url.pathname, site).href} />
+    <meta property="og:image" content={new URL(image, site).href} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -40,7 +54,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   <body>
     <header class="site-header">
       <div class="header-inner">
-        <a class="monogram" href="/" aria-label="Home">{wedding.couple.first[0]}<em>&amp;</em>{wedding.couple.second[0]}</a>
+        <a class="monogram" href="/wedding" aria-label="Home">{wedding.couple.first[0]}<em>&amp;</em>{wedding.couple.second[0]}</a>
         <details class="menu">
           <summary aria-label="Menu">Menu</summary>
           <nav>

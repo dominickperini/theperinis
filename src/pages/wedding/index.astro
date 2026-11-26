@@ -1,12 +1,12 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Photo from '../components/Photo.astro';
-import Arrow from '../components/Arrow.astro';
-import { wedding } from '../data/wedding';
-import StoryTimeline from '../components/StoryTimeline.astro';
-import Album from '../components/Album.astro';
-import { hero } from '../data/media';
-import { ridgePath, RIDGE_W, RIDGE_H } from '../lib/ridge';
+import Layout from '../../layouts/Layout.astro';
+import Photo from '../../components/Photo.astro';
+import Arrow from '../../components/Arrow.astro';
+import { wedding } from '../../data/wedding';
+import StoryTimeline from '../../components/StoryTimeline.astro';
+import FlightAlbum from '../../components/FlightAlbum.astro';
+import { hero } from '../../data/media';
+import { ridgePath, RIDGE_W, RIDGE_H } from '../../lib/ridge';
 
 // Show the weekday on its own line, like a field note: "September 5, 2027" / "Sunday".
 const [weekday, ...rest] = wedding.date.split(', ');
@@ -14,10 +14,10 @@ const dateMain = rest.length ? rest.join(', ') : wedding.date;
 const dateSub = rest.length ? weekday : '';
 
 const links = [
-  { href: '/details#schedule', title: 'Schedule', text: 'Times and places for the weekend.' },
-  { href: '/details#travel', title: 'Travel', text: 'Airports, hotels, and directions.' },
-  { href: '/details#registry', title: 'Registry', text: 'Gifts, if you want to.' },
-  { href: '/details#faq', title: 'Questions', text: 'Answers to common questions.' },
+  { href: '/wedding/details#schedule', title: 'Schedule', text: 'Times and places for the weekend.' },
+  { href: '/wedding/details#travel', title: 'Travel', text: 'Airports, hotels, and directions.' },
+  { href: '/wedding/details#registry', title: 'Registry', text: 'Gifts, if you want to.' },
+  { href: '/wedding/details#faq', title: 'Questions', text: 'Answers to common questions.' },
 ];
 ---
 
@@ -54,7 +54,7 @@ const links = [
           }
         </dl>
         <div class="cta">
-          <a class="button" href="/rsvp">RSVP <Arrow /></a>
+          <a class="button" href="/wedding/rsvp">RSVP <Arrow /></a>
           <p class="label small">Reply before {wedding.rsvpDeadline}</p>
         </div>
       </div>
@@ -70,13 +70,15 @@ const links = [
     <StoryTimeline />
   </section>
 
-  <section class="wide notes" id="photos" aria-labelledby="photos-title">
-    <header class="notes-head ruled reveal">
-      <p class="label">§ 02</p>
-      <h2 id="photos-title">Along the way</h2>
-      <p class="lead">A few places and moments that brought us here.</p>
+  <section class="notes" id="photos" aria-labelledby="photos-title">
+    <header class="wide">
+      <div class="notes-head ruled reveal">
+        <p class="label">§ 02</p>
+        <h2 id="photos-title">Along the way</h2>
+        <p class="lead">Point at a photo, and the plane flies to where we took it.</p>
+      </div>
     </header>
-    <Album />
+    <div class="bleed"><FlightAlbum /></div>
   </section>
 
   <nav class="wide index" aria-label="More about the wedding">
@@ -193,6 +195,7 @@ const links = [
     margin-bottom: clamp(32px, 5vw, 64px);
   }
   .notes-head h2 { margin: 0; }
+  .bleed { max-width: 1600px; margin: 0 auto; padding: 0 var(--gutter); }
   .lead { font-size: 1.15rem; line-height: 1.45; color: var(--muted); margin: 0; max-width: 28ch; }
   @media (min-width: 900px) {
     .notes-head { grid-template-columns: 2fr 6fr 4fr; align-items: baseline; }

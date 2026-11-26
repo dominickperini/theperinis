@@ -88,7 +88,7 @@ export const faq = [
 ];
 
 export const nav = [
-  { href: '/', label: 'Home' },
-  { href: '/details', label: 'Details' },
-  { href: '/rsvp', label: 'RSVP' },
+  { href: '/wedding', label: 'Home' },
+  { href: '/wedding/details', label: 'Details' },
+  { href: '/wedding/rsvp', label: 'RSVP' },
 ];

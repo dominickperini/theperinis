@@ -8,15 +8,15 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const form = await request.formData();
 
   // Bots fill in the hidden "website" field. People do not see it.
-  if (form.get('website')) return redirect('/rsvp/thanks', 303);
+  if (form.get('website')) return redirect('/wedding/rsvp/thanks', 303);
 
   if (!storageReady()) {
     console.error('RSVP storage is not set up. Add Upstash for Redis in Vercel.');
-    return redirect('/rsvp?error=server', 303);
+    return redirect('/wedding/rsvp?error=server', 303);
   }
 
   const code = String(form.get('code') ?? '');
-  const back = (error: string) => redirect(`/rsvp?code=${encodeURIComponent(code)}&error=${error}`, 303);
+  const back = (error: string) => redirect(`/wedding/rsvp?code=${encodeURIComponent(code)}&error=${error}`, 303);
 
   try {
     const party = code ? await getParty(code) : null;
@@ -31,7 +31,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     await saveRsvp(rsvp);
     await setReply(party.code, rsvp.attending === 'yes' ? rsvp.guests : 0);
 
-    return redirect(`/rsvp/thanks?attending=${rsvp.attending}`, 303);
+    return redirect(`/wedding/rsvp/thanks?attending=${rsvp.attending}`, 303);
   } catch (err) {
     console.error('Could not save RSVP', err);
     return back('server');

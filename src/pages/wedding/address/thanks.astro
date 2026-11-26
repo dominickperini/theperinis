@@ -1,0 +1,18 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { wedding } from '../../../data/wedding';
+---
+
+<Layout title="Thank you" noindex>
+  <div class="container center">
+    <p class="eyebrow">Address received</p>
+    <h1>Thank you!</h1>
+    <p>Watch your mailbox for the invitation. We hope that you can join us on {wedding.date}.</p>
+    <p><a class="button" href="/wedding">See the wedding website</a></p>
+    <p class="muted">To change your address, <a href="/wedding/address">send the form again</a>.</p>
+  </div>
+</Layout>
+
+<style>
+  .center { text-align: center; padding-top: 40px; }
+</style>
