@@ -406,9 +406,9 @@ const tip = piece(7, 0, 46, 'tip');
       return { kind: 'got', who, text: `${names(who)} got this` };
     }
     if (team.length === 1) {
-      return { kind: 'pair', who: team, text: team[0] === me ? 'You want to pair up' : `${nameOf(team[0])} wants to pair up` };
+      return { kind: 'pair', who: team, text: team[0] === me ? 'You want to tag team' : `${nameOf(team[0])} wants to tag team` };
     }
-    if (team.length > 1) return { kind: 'pair', who: team, text: `${names(team)} pair up on this` };
+    if (team.length > 1) return { kind: 'pair', who: team, text: `${names(team)} tag team on this` };
     return { kind: '', who: [] as string[], text: '' };
   }
 
@@ -439,13 +439,13 @@ const tip = piece(7, 0, 46, 'tip');
     } else if (inTeam) {
       acts =
         act('got', g.id, ICON.bow, team.length > 1 ? 'We got it' : 'I got it', 'data-got="1"') +
-        act('pair', g.id, ICON.undo, team.length > 1 ? 'Leave the pair' : 'Stop looking');
+        act('pair', g.id, ICON.undo, team.length > 1 ? 'Leave the team' : 'Stop looking');
       say = team.length > 1
         ? 'Agree on the details in the notes below.'
         : `The others can see that you want a partner for this gift. ${esc(ownerName)} cannot.`;
     } else {
-      acts = act('got', g.id, ICON.bow, 'I got it', 'data-got="1"') + act('pair', g.id, ICON.rings, 'Pair up', 'data-on="1"');
-      say = '“I got it” tells the others that you have this gift. “Pair up” asks for a partner to buy it together.';
+      acts = act('got', g.id, ICON.bow, 'I got it', 'data-got="1"') + act('pair', g.id, ICON.rings, 'Tag team', 'data-on="1"');
+      say = '“I got it” tells the others that you have this gift. “Tag team” asks for a partner to buy it together.';
     }
     const comments = view.comments.filter((c) => c.gift === g.id);
     return `
@@ -593,13 +593,13 @@ const tip = piece(7, 0, 46, 'tip');
 
     const got = view.gifts.filter((g) => g.gotBy).length;
     const pairs = view.gifts.filter((g) => !g.gotBy && g.team?.length).length;
-    const tally = [got ? `${got} of ${view.gifts.length} got` : '', pairs ? `${pairs} to pair up on` : ''].filter(Boolean).join(', ');
+    const tally = [got ? `${got} of ${view.gifts.length} got` : '', pairs ? `${pairs} to tag team on` : ''].filter(Boolean).join(', ');
     return `
       <h1>${esc(possessive(ownerName))} list</h1>
       <p class="lede">Tap a gift to open it. ${esc(ownerName)} sees nothing of what you do here.${tally ? ` <strong>${tally}.</strong>` : ''}</p>
       ${view.gifts.length ? `<p class="legend">
         <span>${svg(PARCELS[0] + BOW, '0 0 40 40')}Free</span>
-        <span class="is-pair">${svg(PARCELS[0] + BOW, '0 0 40 40')}Partner wanted</span>
+        <span class="is-pair">${svg(PARCELS[0] + BOW, '0 0 40 40')}Tag team</span>
         <span class="is-got">${svg(PARCELS[0] + BOW, '0 0 40 40')}Got</span>
       </p>` : ''}
       ${sizesHtml(owner, false)}
