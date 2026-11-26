@@ -116,7 +116,7 @@ const tip = piece(7, 0, 46, 'tip');
   let me = store.get('xmas-me');
   let list = new URL(location.href).searchParams.get('list') ?? store.get('xmas-list');
   let picking = !me;                 // true while the person selects "who are you"
-  const open = new Set<string>();    // gifts with the panel open
+  const open = new Set<string>();    // gifts with the note line open
   let editing = '';                  // gift id in edit mode
   let confirming = '';               // id waiting for a second tap to remove
   let seen = new Set<string>();      // ids already drawn (new ones animate in)
@@ -155,7 +155,6 @@ const tip = piece(7, 0, 46, 'tip');
     ring: svg('<path d="M16 11.6 C21 11.6 24.2 14.8 24.2 19.4 C24.2 24 20.8 27.2 16 27.2 C11.2 27.2 7.8 24 7.8 19.4 C7.8 14.8 11 11.6 16 11.6 Z M16 4.4 L19.4 7.9 L16 11.5 L12.6 7.9 Z"/>'),
     other: svg('<path d="M5.6 16.6 L15.6 6 L26 6.2 L26.2 16.6 L15.8 26.6 Z M21.2 10.8 L21.3 10.9"/>'),
     link: svg('<path d="M14 18.4 C11.6 20.8 8 20.9 6 18.8 C4 16.7 4.2 13.4 6.6 11.2 L10 8 C12.4 5.8 15.8 5.9 17.8 8 M18 13.6 C20.4 11.2 24 11.1 26 13.2 C28 15.3 27.8 18.6 25.4 20.8 L22 24 C19.6 26.2 16.2 26.1 14.2 24"/>'),
-    chev: svg('<path d="M9 12.5 C11.6 15 14 17.4 16 19.8 C18 17.4 20.4 15 23 12.5"/>'),
     down: svg('<path d="M9 5 C8 13 10.5 20 16.5 26 M16.5 26 L9.5 24.2 M16.5 26 L17.6 18.8"/>'),
     note: svg('<path d="M5.5 21.5 C3.5 12.5 11 6.5 25.5 7 C27.5 17 20.5 24.5 10 22.5 L5.6 26.6 Z"/>'),
   };
@@ -377,7 +376,7 @@ const tip = piece(7, 0, 46, 'tip');
       </form>`;
   }
 
-  function commentsHtml(comments: Comment[], gift: string | undefined, placeholder: string) {
+  function commentsHtml(comments: Comment[], gift: string | undefined, placeholder: string, form = true) {
     const items = comments
       .map(
         (c) => `<li class="comment${seen.has(c.id) ? '' : ' fresh'}">
@@ -389,13 +388,13 @@ const tip = piece(7, 0, 46, 'tip');
       .join('');
     return `
       ${items ? `<ul class="comments">${items}</ul>` : ''}
-      <form class="note-field" data-form="comment" ${gift ? `data-gift="${gift}"` : ''}>
+      ${form ? `<form class="note-field" data-form="comment" ${gift ? 'data-gift="' + gift + '"' : ''}>
         <label class="field">
           ${lab('Note', true)}
           <input name="text" maxlength="600" placeholder="${esc(placeholder)}" autocomplete="off" enterkeyhint="send" />
         </label>
         <button class="post" type="submit">Post${ICON.arrow}</button>
-      </form>`;
+      </form>` : ''}`;
   }
 
   /** The line under a gift title that says who got it or who pairs up. */
@@ -416,52 +415,39 @@ const tip = piece(7, 0, 46, 'tip');
     return `<button class="act act-${action}" type="button" data-act="${action}" data-id="${id}" ${extra}>${icon}<span>${esc(label)}</span></button>`;
   }
 
-  function panel(g: Gift, view: View, ownerName: string) {
+  /** Under each gift: the actions, in view at all times. No tap to open. */
+  function rowEnd(g: Gift, view: View) {
     const mine = g.addedBy === me;
     const tools = mine
-      ? `<p class="tools">
-          <button class="quiet" type="button" data-act="edit" data-id="${g.id}">Change</button>
-          <button class="quiet" type="button" data-act="del-gift" data-id="${g.id}">${confirming === g.id ? 'Tap again to remove' : 'Remove'}</button>
-        </p>`
+      ? `<button class="quiet" type="button" data-act="edit" data-id="${g.id}">Change</button>
+         <button class="quiet" type="button" data-act="del-gift" data-id="${g.id}">${confirming === g.id ? 'Tap again to remove' : 'Remove'}</button>`
       : '';
-    if (view.own) return `<div class="panel">${tools}</div>`;
+    if (view.own) return tools ? `<div class="row-acts">${tools}</div>` : '';
 
     const team = g.team ?? [];
     const inTeam = team.includes(me);
     let acts = '';
-    let say = '';
     if (g.gotBy) {
       if (g.gotBy === me || inTeam) acts = act('got', g.id, ICON.undo, 'Not got after all');
-      else say = `${esc(nameOf(g.gotBy))} has this one. Pick a different gift, or leave a note.`;
     } else if (team.length && !inTeam) {
       acts = act('pair', g.id, ICON.rings, `Join ${names(team)}`, 'data-on="1"');
-      say = `Tap to buy this gift together with ${esc(names(team))}.`;
     } else if (inTeam) {
       acts =
         act('got', g.id, ICON.bow, team.length > 1 ? 'We got it' : 'I got it', 'data-got="1"') +
         act('pair', g.id, ICON.undo, team.length > 1 ? 'Leave the team' : 'Stop looking');
-      say = team.length > 1
-        ? 'Agree on the details in the notes below.'
-        : `The others can see that you want a partner for this gift. ${esc(ownerName)} cannot.`;
     } else {
       acts = act('got', g.id, ICON.bow, 'I got it', 'data-got="1"') + act('pair', g.id, ICON.rings, 'Tag team', 'data-on="1"');
-      say = '“I got it” tells the others that you have this gift. “Tag team” asks for a partner to buy it together.';
     }
     const comments = view.comments.filter((c) => c.gift === g.id);
-    return `
-      <div class="panel">
-        ${acts ? `<div class="acts">${acts}</div>` : ''}
-        ${say ? `<p class="say">${say}</p>` : ''}
-        ${tools}
-        ${commentsHtml(comments, g.id, 'Write to the others')}
-      </div>`;
+    const writing = open.has(g.id);
+    const noteChip = writing ? '' : `<button class="chip" type="button" data-act="toggle" data-id="${g.id}">${ICON.note}Note</button>`;
+    const notes = comments.length || writing ? `<div class="row-notes">${commentsHtml(comments, g.id, 'Write to the others', writing)}</div>` : '';
+    return `<div class="row-acts">${acts}${noteChip}${tools}</div>${notes}`;
   }
 
   function giftRow(g: Gift, view: View, ownerName: string) {
     if (editing === g.id) return `<li class="gift">${giftForm(g)}</li>`;
-    const isOpen = open.has(g.id);
     const st = view.own ? { kind: '', who: [] as string[], text: '' } : statusOf(g);
-    const count = view.comments.filter((c) => c.gift === g.id).length;
     const pop = st.kind === 'got' && gotBefore.has(g.id) && !gotBefore.get(g.id);
     const faces = st.who.length
       ? `<span class="faces">${st.who.map((id) => `<span class="face">${esc(initial(id))}</span>`).join('')}${st.kind === 'pair' && st.who.length === 1 ? '<span class="face seat">+</span>' : ''}</span>`
@@ -470,11 +456,10 @@ const tip = piece(7, 0, 46, 'tip');
       g.size ? `<span class="size-tag">Size ${esc(g.size)}</span>` : '',
       st.text ? `<span class="status">${esc(st.text)}</span>` : '',
       g.idea ? `<span>Surprise from ${esc(g.addedBy === me ? 'you' : nameOf(g.addedBy))}</span>` : '',
-      count ? `<span class="notes-count">${ICON.note}${count}</span>` : '',
     ].filter(Boolean).join('');
     return `
-      <li class="gift${st.kind ? ` is-${st.kind}` : ''}${isOpen ? ' open' : ''}${seen.has(g.id) ? '' : ' fresh'}${pop ? ' pop' : ''}">
-        <button class="gift-head" type="button" data-act="toggle" data-id="${g.id}" aria-expanded="${isOpen}">
+      <li class="gift${st.kind ? ` is-${st.kind}` : ''}${seen.has(g.id) ? '' : ' fresh'}${pop ? ' pop' : ''}">
+        <div class="gift-head">
           <span class="mark">${view.own ? ICON.spark : parcel(g.id)}</span>
           <span class="gift-body">
             <span class="gift-title">${esc(g.title)}</span>
@@ -482,10 +467,9 @@ const tip = piece(7, 0, 46, 'tip');
             ${meta ? `<span class="gift-meta">${meta}</span>` : ''}
           </span>
           ${faces}
-          <span class="chev">${ICON.chev}</span>
-        </button>
+        </div>
         ${g.link ? card(g.link, g.preview) : ''}
-        ${isOpen ? panel(g, view, ownerName) : ''}
+        ${rowEnd(g, view)}
       </li>`;
   }
 
@@ -596,12 +580,13 @@ const tip = piece(7, 0, 46, 'tip');
     const tally = [got ? `${got} of ${view.gifts.length} got` : '', pairs ? `${pairs} to tag team on` : ''].filter(Boolean).join(', ');
     return `
       <h1>${esc(possessive(ownerName))} list</h1>
-      <p class="lede">Tap a gift to open it. ${esc(ownerName)} sees nothing of what you do here.${tally ? ` <strong>${tally}.</strong>` : ''}</p>
+      <p class="lede">${esc(ownerName)} sees nothing of what you do here.${tally ? ` <strong>${tally}.</strong>` : ''}</p>
       ${view.gifts.length ? `<p class="legend">
         <span>${svg(PARCELS[0] + BOW, '0 0 40 40')}Free</span>
         <span class="is-pair">${svg(PARCELS[0] + BOW, '0 0 40 40')}Tag team</span>
         <span class="is-got">${svg(PARCELS[0] + BOW, '0 0 40 40')}Got</span>
-      </p>` : ''}
+      </p>
+      <p class="help center guide">“I got it” tells the others that you have the gift. “Tag team” asks for a partner to buy it together.</p>` : ''}
       ${sizesHtml(owner, false)}
       <section class="group">
         <h2 class="label">${esc(ownerName)} asked for</h2>
@@ -724,7 +709,13 @@ const tip = piece(7, 0, 46, 'tip');
       input.value = btn.dataset.v ?? '';
       return;
     }
-    if (action === 'toggle') { open.has(id) ? open.delete(id) : open.add(id); render(); return; }
+    if (action === 'toggle') {
+      // Open the line for a note about this gift.
+      open.add(id);
+      render();
+      viewEl.querySelector<HTMLInputElement>(`form[data-form="comment"][data-gift="${id}"] [name="text"]`)?.focus();
+      return;
+    }
     if (action === 'got') { btn.classList.add('wait'); return void call({ action: 'got', id, got: !!btn.dataset.got }); }
     if (action === 'pair') { btn.classList.add('wait'); return void call({ action: 'pair', id, on: !!btn.dataset.on }); }
     if (action === 'edit') { editing = id; render(); (viewEl.querySelector('.editing [name="title"]') as HTMLInputElement)?.focus(); return; }
@@ -1060,26 +1051,9 @@ const tip = piece(7, 0, 46, 'tip');
   .xmas .gifts { list-style: none; margin: 0 0 6px; padding: 0; }
   .xmas .gift { border-bottom: 1px solid var(--line); }
   .xmas .gift.fresh { animation: xmas-in 0.45s var(--glide) both; }
-  .xmas .gift-head {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    width: 100%;
-    padding: 14px 0 12px;
-    border: 0;
-    background: none;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .xmas .chev { flex: none; width: 22px; height: 22px; margin-top: 4px; color: var(--muted); transition: transform 0.35s var(--glide); }
-  .xmas .chev svg { display: block; width: 100%; height: 100%; }
-  .xmas .gift.open .chev { transform: rotate(180deg); color: var(--accent); }
-  .xmas .mark { flex: none; width: 40px; height: 40px; margin-top: -4px; transition: transform 0.45s var(--glide); }
+  .xmas .gift-head { display: flex; align-items: flex-start; gap: 14px; padding: 14px 0 12px; }
+  .xmas .mark { flex: none; width: 40px; height: 40px; margin-top: -4px; }
   .xmas .mark svg { width: 100%; height: 100%; overflow: visible; stroke-width: 1.25; }
-  .xmas .gift-head:is(:hover, :focus-visible) .mark { transform: translateY(-2px) rotate(-3deg); }
   .xmas .gift-body { flex: 1; min-width: 0; display: grid; gap: 3px; }
   .xmas .gift-title { font-size: 1.08rem; line-height: 1.4; overflow-wrap: anywhere; }
   .xmas .gift-note { color: var(--muted); font-size: 0.92rem; white-space: pre-line; overflow-wrap: anywhere; }
@@ -1088,8 +1062,6 @@ const tip = piece(7, 0, 46, 'tip');
   .xmas .status { color: var(--text); font-weight: 600; }
   .xmas .is-got .status { color: var(--accent); }
   .xmas .is-got .gift-title { color: var(--muted); }
-  .xmas .notes-count { display: inline-flex; align-items: center; gap: 4px; }
-  .xmas .notes-count svg { width: 15px; height: 15px; stroke: var(--accent); }
 
   /* The parcel: an outline when free, a gold ribbon when people pair up,
      wrapped in moss with a bow when someone got it. */
@@ -1127,14 +1099,22 @@ const tip = piece(7, 0, 46, 'tip');
   .xmas .face.seat { border-style: dashed; font-family: var(--sans); font-size: 0.85rem; color: var(--gold); }
 
   /* The open gift: drawn actions, notes, and small tools. */
-  .xmas .panel { padding: 2px 0 20px 54px; animation: xmas-in 0.35s var(--glide) both; }
-  .xmas .acts { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 10px; }
+  /* The actions of a gift are in view at all times. */
+  .xmas .row-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 0 0 16px 54px; }
+  .xmas .row-acts .quiet { margin-left: 6px; }
+  .xmas .row-acts .quiet:first-child { margin-left: 0; }
+  .xmas .row-acts:not(:has(.act, .chip)) { margin-top: -8px; padding-bottom: 10px; }
+  .xmas .row-acts .chip { min-height: 42px; }
+  .xmas .row-notes { padding: 0 0 18px 54px; animation: xmas-in 0.35s var(--glide) both; }
+  .xmas .row-notes .comments { margin-top: 0; }
+  .xmas .row-notes .note-field:first-child { margin-top: 0; }
+  .xmas .help.guide { margin: -16px auto 28px; max-width: 30em; }
   .xmas .act {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    min-height: 46px;
-    padding: 0 18px 0 12px;
+    min-height: 42px;
+    padding: 0 16px 0 11px;
     border: 1.25px solid var(--text);
     border-radius: 999px;
     background: none;
@@ -1255,7 +1235,7 @@ const tip = piece(7, 0, 46, 'tip');
     .xmas *, .xmas *::before, .xmas *::after { animation: none !important; transition: none !important; }
   }
   @media (max-width: 420px) {
-    .xmas .panel { padding-left: 0; }
+    .xmas .row-acts:has(.act), .xmas .row-notes { padding-left: 0; }
     .xmas .pv { max-width: none; }
     .xmas .gift-link { margin-left: 54px; }
   }
