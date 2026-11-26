@@ -2,7 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import Arrow from '../../components/Arrow.astro';
 import Faq from '../../components/Faq.astro';
-import StoryTimeline from '../../components/StoryTimeline.astro';
+import Milestones from '../../components/Milestones.astro';
 import { schedule, travel, wedding, registry } from '../../data/wedding';
 
 // One page for everything a guest needs, in reading order. Nothing is hidden
@@ -150,7 +150,7 @@ const [weekday, ...rest] = wedding.date.split(', ');
         <h2 id="story-title">{parts[4].title}</h2>
         <p class="lead">{parts[4].lead}</p>
       </header>
-      <StoryTimeline />
+      <Milestones />
     </section>
 
     <aside class="end reveal">
