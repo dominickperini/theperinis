@@ -25,8 +25,8 @@ const dateSub = rest.length ? weekday : '';
         aria-label="Drone film of two people on a green mountain ridge above high cliffs"
         data-loop
       >
-        <source src="/video/hero-960.mp4" type="video/mp4" media="(max-width: 720px)" />
-        <source src="/video/hero-1600.mp4" type="video/mp4" />
+        <source src="/video/hero-1080.mp4" type="video/mp4" media="(max-width: 720px)" />
+        <source src="/video/hero-1440.mp4" type="video/mp4" />
       </video>
     </div>
 
@@ -64,11 +64,11 @@ const dateSub = rest.length ? weekday : '';
     </div>
   </section>
 
-  <section class="notes" id="photos" aria-labelledby="photos-title">
+  <section class="notes" id="story" aria-labelledby="photos-title">
     <header class="wide">
       <div class="notes-head ruled reveal">
         <p class="label">§ 01</p>
-        <h2 id="photos-title">Along the way</h2>
+        <h2 id="photos-title">Our story</h2>
         <p class="lead">Point at a photo, and the plane flies to where we took it.</p>
       </div>
     </header>
@@ -80,18 +80,18 @@ const dateSub = rest.length ? weekday : '';
 <style>
   /* ---------- Hero ---------- */
   .hero { margin-top: -24px; padding-bottom: clamp(64px, 10vw, 128px); }
-  .hero-film { padding: 0 var(--gutter); max-width: 1600px; margin: 0 auto; }
+  /* The film is not very sharp, so it shows at a modest size and at its own 16:9 shape (no crop). */
+  .hero-film { padding: 0 var(--gutter); max-width: calc(1040px + 2 * var(--gutter)); margin: 0 auto; }
   .hero-film video {
     display: block;
     width: 100%;
-    height: min(78svh, 860px);
-    min-height: 320px;
+    aspect-ratio: 16 / 9;
+    max-height: 66svh;
     object-fit: cover;
     background: var(--stone);
     animation: film-in 1.4s var(--glide) 0.1s both;
   }
   @keyframes film-in { from { opacity: 0; transform: scale(1.03); } }
-  @media (max-width: 720px) { .hero-film video { height: 58svh; } }
   @media (prefers-reduced-motion: reduce) { .hero-film video { animation: none; } }
 
   .hero-text {

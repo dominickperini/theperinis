@@ -7,13 +7,13 @@ import { schedule, travel, wedding, registry } from '../../data/wedding';
 
 // One page for everything a guest needs, in reading order. Nothing is hidden
 // behind a click. Each part has its own anchor, so old links (/schedule,
-// /travel, /registry, /faq, /story) go to the correct place.
+// /travel, /registry, /faq) go to the correct place.
 const parts = [
   { id: 'schedule', title: 'Schedule', lead: 'The plan for the weekend.' },
   { id: 'travel', title: 'Travel', lead: 'How to get here, and where to stay.' },
   { id: 'registry', title: 'Registry', lead: 'Gifts, if you want to.' },
   { id: 'faq', title: 'Questions', lead: 'Answers to common questions.' },
-  { id: 'story', title: 'Our story', lead: 'How we got here, one stop at a time.' },
+  { id: 'milestones', title: 'Milestones', lead: 'The big days so far.' },
 ];
 const num = (i: number) => String(i + 1).padStart(2, '0');
 const [weekday, ...rest] = wedding.date.split(', ');
@@ -143,8 +143,8 @@ const [weekday, ...rest] = wedding.date.split(', ');
       <div class="part-body"><Faq /></div>
     </section>
 
-    <!-- 05 Our story -->
-    <section class="part story" id="story" aria-labelledby="story-title">
+    <!-- 05 Milestones -->
+    <section class="part story" id="milestones" aria-labelledby="story-title">
       <header class="part-head ruled reveal">
         <p class="label">§ {num(4)}</p>
         <h2 id="story-title">{parts[4].title}</h2>

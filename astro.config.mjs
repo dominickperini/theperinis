@@ -13,7 +13,7 @@ export default defineConfig({
   redirects: {
     // Temporary (302): later theperinis.net becomes the family home page.
     '/': { status: 302, destination: '/wedding' },
-    '/story': '/wedding/details#story',
+    '/story': '/wedding#story',
     '/details': '/wedding/details',
     '/schedule': '/wedding/details#schedule',
     '/travel': '/wedding/details#travel',
