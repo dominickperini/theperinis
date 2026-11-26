@@ -11,7 +11,7 @@ export const wedding = {
     address: '24020 SH-74, Indian Hills, CO 80454',
     mapUrl: 'https://www.google.com/maps/search/?api=1&query=Dunafon+Castle+24020+SH-74+Indian+Hills+CO+80454',
   },
-  rsvpDeadline: '[RSVP deadline]', // Example: 'May 1, 2027'
+  rsvpDeadline: 'Thursday, July 1, 2027',
   contactEmail: '[contact email]',
   hashtag: '', // Example: '#ThePerinis'
 };
@@ -83,16 +83,12 @@ export const faq = [
   { q: 'Are children welcome?', a: '[Yes or no, and any details.]' },
   { q: 'Is the venue indoors or outdoors?', a: '[Indoors, outdoors, or both. Tell guests what shoes to wear.]' },
   { q: 'Is there parking at the venue?', a: '[Parking details.]' },
-  { q: 'When must I RSVP?', a: `Please RSVP before ${wedding.rsvpDeadline}.` },
+  { q: 'When must I RSVP?', a: `Please RSVP by ${wedding.rsvpDeadline}.` },
   { q: 'Who do I contact with questions?', a: `Send an email to ${wedding.contactEmail}.` },
 ];
 
 export const nav = [
-  { href: '/', label: 'Home' },
-  { href: '/story', label: 'Our Story' },
-  { href: '/schedule', label: 'Schedule' },
-  { href: '/travel', label: 'Travel' },
-  { href: '/registry', label: 'Registry' },
-  { href: '/faq', label: 'FAQ' },
-  { href: '/rsvp', label: 'RSVP' },
+  { href: '/wedding', label: 'Home' },
+  { href: '/wedding/details', label: 'Details' },
+  { href: '/wedding/rsvp', label: 'RSVP' },
 ];

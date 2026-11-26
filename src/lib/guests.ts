@@ -8,6 +8,7 @@ export interface Party {
   code: string; // Also the id. Guests type it, or open the link with it.
   name: string;
   email: string;
+  phone?: string; // For texting the save-the-date
   list: 'A' | 'B';
   seats: number; // How many people the invitation is for
   order: number; // Backfill order inside the list (lower goes first)
@@ -15,6 +16,7 @@ export interface Party {
   attending: number; // People who said yes
   invitedAt?: string;
   respondedAt?: string;
+  stdSentAt?: string; // When we sent the electronic save-the-date
 }
 
 export interface Settings {
@@ -83,8 +85,8 @@ export async function saveSettings(settings: Settings): Promise<void> {
 }
 
 /**
- * Reads one party per line: name, email, list, seats.
- * Email may be empty. List is A or B (default B). Seats default to 1.
+ * Reads one party per line: name, email, list, seats, phone.
+ * Email and phone may be empty. List is A or B (default B). Seats default to 1.
  * A name that contains a comma must be in double quotes.
  */
 export function parseGuestLines(text: string): { rows: Omit<Party, 'code' | 'order'>[]; errors: string[] } {
@@ -93,7 +95,7 @@ export function parseGuestLines(text: string): { rows: Omit<Party, 'code' | 'ord
   text.split(/\r?\n/).forEach((line, i) => {
     if (!line.trim()) return;
     const cells = splitCsvLine(line).map((c) => c.trim());
-    const [name = '', email = '', list = 'B', seats = '1'] = cells;
+    const [name = '', email = '', list = 'B', seats = '1', phone = ''] = cells;
     if (/^name$/i.test(name)) return; // Header row
     const n = Number.parseInt(seats, 10);
     const l = list.toUpperCase();
@@ -104,6 +106,7 @@ export function parseGuestLines(text: string): { rows: Omit<Party, 'code' | 'ord
       rows.push({
         name: name.slice(0, 200),
         email: email.slice(0, 200),
+        phone: cleanPhone(phone),
         list: l,
         seats: n,
         status: 'not_invited',
@@ -111,6 +114,30 @@ export function parseGuestLines(text: string): { rows: Omit<Party, 'code' | 'ord
       });
   });
   return { rows, errors };
+}
+
+/** Keeps digits and a leading +. "(303) 555-0100" -> "3035550100". */
+export const cleanPhone = (s: string) => {
+  const t = s.trim();
+  return ((t.startsWith('+') ? '+' : '') + t.replace(/\D/g, '')).slice(0, 20);
+};
+
+/** Change the email and phone of a party. */
+export async function setContact(code: string, email: string, phone: string): Promise<Party | null> {
+  const p = await getParty(code);
+  if (!p) return null;
+  const next = { ...p, email: email.trim().slice(0, 200), phone: cleanPhone(phone) };
+  await saveParty(next);
+  return next;
+}
+
+/** Mark the electronic save-the-date as sent (or not sent). */
+export async function markSaveTheDate(code: string, sent: boolean): Promise<Party | null> {
+  const p = await getParty(code);
+  if (!p) return null;
+  const next = { ...p, stdSentAt: sent ? new Date().toISOString() : undefined };
+  await saveParty(next);
+  return next;
 }
 
 function splitCsvLine(line: string): string[] {

@@ -11,11 +11,11 @@ export const GET: APIRoute = async ({ cookies, url }) => {
   if (!isAdmin(cookies)) return new Response('Not found', { status: 404 });
   const parties = await listParties();
   const byCode = new Map((await listAddresses()).map((a) => [a.code, a]));
-  const cols = ['list', 'name', 'email', 'seats', 'status', 'attending', 'code', 'link', 'addressLink', 'invitedAt', 'respondedAt', ...ADDRESS_COLUMNS];
+  const cols = ['list', 'name', 'email', 'phone', 'seats', 'status', 'attending', 'code', 'link', 'addressLink', 'invitedAt', 'respondedAt', ...ADDRESS_COLUMNS];
   const rows = parties.map((p) =>
     [
-      p.list, p.name, p.email, p.seats, p.status, p.attending, p.code,
-      `${url.origin}/rsvp?code=${p.code}`, `${url.origin}/address?code=${p.code}`,
+      p.list, p.name, p.email, p.phone ?? '', p.seats, p.status, p.attending, p.code,
+      `${url.origin}/wedding/rsvp?code=${p.code}`, `${url.origin}/wedding/address?code=${p.code}`,
       p.invitedAt, p.respondedAt, ...addressCells(byCode.get(p.code)),
     ]
       .map(csvCell)

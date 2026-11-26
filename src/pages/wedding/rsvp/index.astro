@@ -1,7 +1,7 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import { wedding } from '../../data/wedding';
-import { findParties, getParty, normalizeCode, type Party } from '../../lib/guests';
+import Layout from '../../../layouts/Layout.astro';
+import { wedding } from '../../../data/wedding';
+import { findParties, getParty, normalizeCode, type Party } from '../../../lib/guests';
 
 export const prerender = false;
 
@@ -46,14 +46,14 @@ Astro.response.headers.set('Cache-Control', 'no-store');
     <div class="page-title">
       <p class="eyebrow">RSVP</p>
       <h1>Will you join us?</h1>
-      <p>Please reply before {wedding.rsvpDeadline}.</p>
+      <p>Please reply by {wedding.rsvpDeadline}.</p>
     </div>
 
     {error && <p class="error card" role="alert">{error}</p>}
 
     {
       !party && (
-        <form class="card" method="get" action="/rsvp" role="search">
+        <form class="card" method="get" action="/wedding/rsvp" role="search">
           <label>
             Your last name
             <input name="last" required minlength="2" maxlength="60" value={last} autocomplete="family-name" />
@@ -71,7 +71,7 @@ Astro.response.headers.set('Cache-Control', 'no-store');
           <ul>
             {matches.map((p) => (
               <li>
-                <a href={`/rsvp?code=${p.code}`}>
+                <a href={`/wedding/rsvp?code=${p.code}`}>
                   <strong>{p.name}</strong>
                   <span class="muted">{p.seats} {p.seats === 1 ? 'seat' : 'seats'}</span>
                 </a>
@@ -151,7 +151,7 @@ Astro.response.headers.set('Cache-Control', 'no-store');
       </label>
 
       <button class="button" type="submit">Send RSVP</button>
-      <p class="muted small">To change your reply, search for your name again and send the form again. <a href="/rsvp">This is not my party.</a></p>
+      <p class="muted small">To change your reply, search for your name again and send the form again. <a href="/wedding/rsvp">This is not my party.</a></p>
     </form>
     )}
   </div>

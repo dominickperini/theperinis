@@ -14,14 +14,17 @@ interface Props {
   eager?: boolean;
   class?: string;
   style?: string;
+  /** Extra data-* attributes for the figure. */
+  data?: Record<string, string>;
 }
 
-const { media, index, ratio, sizes = '100vw', eager = false, class: className, style } = Astro.props;
+const { media, index, ratio, sizes = '100vw', eager = false, class: className, style, data = {} } = Astro.props;
+const dataAttrs = Object.fromEntries(Object.entries(data).map(([k, v]) => [`data-${k}`, v]));
 const num = index !== undefined ? `No. ${String(index).padStart(2, '0')}` : '';
 const caption = [num, media.note].filter(Boolean).join(' · ');
 ---
 
-<figure class:list={['photo', className]} style={style}>
+<figure class:list={['photo', className]} style={style} {...dataAttrs}>
   <div class="frame" style={ratio ? `aspect-ratio: ${ratio}` : undefined}>
     {
       media.video ? (
