@@ -17,6 +17,7 @@ export interface Gift {
   idea: boolean;      // true when someone else added it (secret from the owner)
   gotBy?: string;     // person id
   gotAt?: string;
+  team?: string[];    // people who pair up on this gift (secret from the owner)
   createdAt: string;
 }
 export interface Comment {
@@ -93,11 +94,18 @@ export function makeComment(owner: string, by: string, text: string, gift?: stri
   return { id: newId(), owner, gift, by, text, createdAt: now() };
 }
 
+/** How many gifts each person asked for. Ideas from others are not counted, so this is safe to show to all. */
+export async function counts(): Promise<Record<string, number>> {
+  const out: Record<string, number> = {};
+  for (const g of await getAll<Gift>(GIFTS)) if (!g.idea) out[g.owner] = (out[g.owner] ?? 0) + 1;
+  return out;
+}
+
 /** The list as one viewer may see it. */
 export async function listFor(me: string, owner: string) {
   const all = (await getAll<Gift>(GIFTS)).filter((g) => g.owner === owner).sort(byDate);
   if (me === owner) {
-    // Own list: only the gifts you added, with no status and no comments.
+    // Own list: only the gifts you added, with no status, no pairs and no comments.
     const gifts = all
       .filter((g) => !g.idea)
       .map(({ id, owner, title, link, note, addedBy, createdAt }) => ({ id, owner, title, link, note, addedBy, idea: false, createdAt }));
