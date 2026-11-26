@@ -1,0 +1,53 @@
+---
+import '../styles/global.css';
+
+// A plain layout for the family pages (not the wedding): no wedding menu,
+// no wedding footer. Same look: oat paper, granite, one moss accent.
+interface Props {
+  title: string;
+  description?: string;
+  noindex?: boolean;
+}
+const { title, description = 'The Perinis.', noindex = false } = Astro.props;
+const adobeKit = import.meta.env.PUBLIC_ADOBE_FONTS_KIT;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#efe9dd" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} | The Perinis</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    {adobeKit && <link rel="stylesheet" href={`https://use.typekit.net/${adobeKit}.css`} />}
+  </head>
+  <body>
+    <header class="family-header">
+      <span class="family-mark">The Perinis</span>
+    </header>
+    <main><slot /></main>
+  </body>
+</html>
+
+<style>
+  .family-header {
+    display: flex;
+    justify-content: center;
+    padding: max(16px, env(safe-area-inset-top)) 20px 0;
+  }
+  .family-mark {
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  main { padding-top: 28px; }
+</style>

@@ -1,0 +1,603 @@
+---
+import Family from '../../layouts/Family.astro';
+
+// Christmas lists. Not in the menu and not indexed. The page is static;
+// the lists come from /api/xmas, which removes the surprise data when
+// a person looks at their own list.
+---
+
+<Family title="Christmas lists" description="Our family Christmas lists." noindex>
+  <div class="container xmas" id="xmas">
+    <div class="page-title">
+      <p class="eyebrow">Christmas lists</p>
+      <h1>Who is it for?</h1>
+    </div>
+
+    <form class="picker" id="picker" autocomplete="off" onsubmit="return false">
+      <label class="pick">
+        <span class="pick-word">I am</span>
+        <span class="select"><select id="me" aria-label="I am"></select></span>
+      </label>
+      <label class="pick">
+        <span class="pick-word">looking at</span>
+        <span class="nowrap"><span class="select"><select id="list" aria-label="Looking at the list of"></select></span><span id="list-tail"></span></span>
+        <span class="pick-word">list</span>
+      </label>
+    </form>
+
+    <form class="add-person" id="add-person" hidden>
+      <label class="label" for="person-name">New person</label>
+      <div class="inline">
+        <input id="person-name" name="name" maxlength="40" placeholder="Name" autocomplete="off" required />
+        <button class="button small" type="submit">Add</button>
+      </div>
+      <button class="text-button" type="button" data-cancel>Cancel</button>
+    </form>
+
+    <p class="error" id="error" role="alert" hidden></p>
+    <div id="view" aria-live="polite"><p class="muted center">Loading the lists…</p></div>
+  </div>
+</Family>
+
+<script>
+  type Person = { id: string; name: string };
+  type Gift = {
+    id: string; owner: string; title: string; link?: string; note?: string;
+    addedBy: string; idea: boolean; gotBy?: string; createdAt: string;
+  };
+  type Comment = { id: string; owner: string; gift?: string; by: string; text: string; createdAt: string };
+  type View = { own: boolean; gifts: Gift[]; comments: Comment[] };
+  type State = { people: Person[]; view: View | null };
+
+  const ADD = '__add__';
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+  const meSel = $<HTMLSelectElement>('me');
+  const listSel = $<HTMLSelectElement>('list');
+  const tail = $('list-tail');
+  const viewEl = $('view');
+  const errorEl = $('error');
+  const addPersonForm = $<HTMLFormElement>('add-person');
+
+  const store = {
+    get: (k: string) => { try { return localStorage.getItem(k) ?? ''; } catch { return ''; } },
+    set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
+  };
+
+  let state: State = { people: [], view: null };
+  let me = store.get('xmas-me');
+  let list = new URL(location.href).searchParams.get('list') ?? store.get('xmas-list');
+  let addingFor: 'me' | 'list' = 'me';
+  const open = new Set<string>();   // gifts with the comments panel open
+  let editing = '';                  // gift id in edit mode
+  let confirming = '';               // id waiting for a second tap to remove
+  let seen = new Set<string>();      // ids already drawn (new ones animate in)
+  let busy = false;
+
+  const esc = (s: string) =>
+    s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  const nameOf = (id?: string) => state.people.find((p) => p.id === id)?.name ?? 'Someone';
+  const possessive = (n: string) => (n.endsWith('s') ? `${n}’` : `${n}’s`);
+  const host = (link: string) => { try { return new URL(link).hostname.replace(/^www\./, ''); } catch { return 'link'; } };
+
+  function showError(msg: string) {
+    errorEl.textContent = msg;
+    errorEl.hidden = !msg;
+  }
+
+  // Requests run one at a time, in order, so a quick second tap is not lost.
+  let queue: Promise<unknown> = Promise.resolve();
+  function call(body?: Record<string, unknown>): Promise<any> {
+    const next = queue.then(() => send(body));
+    queue = next.catch(() => null);
+    return next;
+  }
+
+  async function send(body?: Record<string, unknown>) {
+    busy = true;
+    try {
+      const res = body
+        ? await fetch('/api/xmas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ me, list, ...body }),
+          })
+        : await fetch(`/api/xmas?me=${encodeURIComponent(me)}&list=${encodeURIComponent(list)}`, { cache: 'no-store' });
+      const data = await res.json().catch(() => ({ error: 'server' }));
+      if (!res.ok) {
+        showError(
+          data.error === 'server' || data.error === 'storage' || data.error === 'bad request'
+            ? 'Something went wrong. Please try again.'
+            : data.error,
+        );
+        if (body) await send();
+        return null;
+      }
+      showError('');
+      state = data;
+      render();
+      return data;
+    } catch {
+      showError('We cannot reach the website. Check your connection and try again.');
+      return null;
+    } finally {
+      busy = false;
+    }
+  }
+
+  function fillSelect(sel: HTMLSelectElement, value: string, placeholder: string) {
+    const opts = state.people.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+    sel.innerHTML =
+      `<option value="" disabled>${placeholder}</option>${opts}<option value="${ADD}">+ Add a person</option>`;
+    sel.value = state.people.some((p) => p.id === value) ? value : '';
+    sel.closest('.select')!.classList.toggle('empty', !sel.value);
+  }
+
+  function giftForm(g?: Gift, ownerName = '') {
+    const own = list === me;
+    const label = g ? 'Save' : own ? 'Add to my list' : 'Add the idea';
+    const placeholder = own ? 'What would you like?' : `A gift idea for ${ownerName}`;
+    const more = !!(g && (g.link || g.note));
+    return `
+      <form class="gift-form${g ? ' editing' : ''}" data-form="${g ? 'edit' : 'add'}" ${g ? `data-id="${g.id}"` : ''}>
+        <div class="inline">
+          <input name="title" maxlength="140" required placeholder="${esc(placeholder)}" value="${esc(g?.title ?? '')}" autocomplete="off" enterkeyhint="done" />
+          <button class="button small" type="submit">${label}</button>
+        </div>
+        <details class="more" ${more ? 'open' : ''}>
+          <summary>Add a link or a note</summary>
+          <input name="link" type="text" inputmode="url" autocapitalize="off" spellcheck="false" maxlength="1000" placeholder="Link (optional)" value="${esc(g?.link ?? '')}" />
+          <textarea name="note" maxlength="600" rows="2" placeholder="Note: size, color, where to buy (optional)">${esc(g?.note ?? '')}</textarea>
+        </details>
+        ${g ? `<button class="text-button" type="button" data-act="cancel-edit">Cancel</button>` : ''}
+      </form>`;
+  }
+
+  function commentsHtml(comments: Comment[], gift?: string) {
+    const items = comments
+      .map(
+        (c) => `<li class="comment${seen.has(c.id) ? '' : ' fresh'}">
+          <span class="by">${esc(nameOf(c.by))}</span>
+          <span class="text">${esc(c.text)}</span>
+          ${c.by === me ? `<button class="text-button" type="button" data-act="del-comment" data-id="${c.id}">${confirming === c.id ? 'Tap again to remove' : 'Remove'}</button>` : ''}
+        </li>`,
+      )
+      .join('');
+    return `
+      ${items ? `<ul class="comments">${items}</ul>` : ''}
+      <form class="comment-form inline" data-form="comment" ${gift ? `data-gift="${gift}"` : ''}>
+        <input name="text" maxlength="600" required placeholder="${gift ? 'Add a comment' : 'Write a note to the others'}" autocomplete="off" enterkeyhint="send" />
+        <button class="button small" type="submit">Post</button>
+      </form>`;
+  }
+
+  function giftRow(g: Gift, view: View) {
+    if (editing === g.id) return `<li class="gift">${giftForm(g)}</li>`;
+    const mine = g.addedBy === me;
+    const comments = view.comments.filter((c) => c.gift === g.id);
+    const got = !!g.gotBy;
+    const gotByMe = g.gotBy === me;
+    const check = view.own
+      ? ''
+      : `<button class="check${got ? ' on' : ''}" type="button" data-act="got" data-id="${g.id}" data-got="${got ? '' : '1'}"
+           aria-pressed="${got}" aria-label="${got ? 'Remove the mark' : 'Mark as got'}" ${got && !gotByMe ? 'disabled' : ''}>
+           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.5l3.6 3.6 7.4-8.2"/></svg>
+         </button>`;
+    const status = view.own
+      ? ''
+      : got
+        ? `<span class="status got">${gotByMe ? 'You got this' : `${esc(nameOf(g.gotBy))} got this`}</span>`
+        : '';
+    const meta = [
+      g.idea ? `<span>Idea from ${esc(g.addedBy === me ? 'you' : nameOf(g.addedBy))}</span>` : '',
+      g.link ? `<a href="${esc(g.link)}" target="_blank" rel="noopener noreferrer nofollow">${esc(host(g.link))} ↗</a>` : '',
+    ].filter(Boolean).join('');
+    const tools = [
+      !view.own
+        ? `<button class="text-button" type="button" data-act="toggle" data-id="${g.id}" aria-expanded="${open.has(g.id)}">${comments.length ? `${comments.length} comment${comments.length > 1 ? 's' : ''}` : 'Comment'}</button>`
+        : '',
+      mine ? `<button class="text-button" type="button" data-act="edit" data-id="${g.id}">Change</button>` : '',
+      mine ? `<button class="text-button" type="button" data-act="del-gift" data-id="${g.id}">${confirming === g.id ? 'Tap again to remove' : 'Remove'}</button>` : '',
+    ].filter(Boolean).join('');
+    return `
+      <li class="gift${got ? ' is-got' : ''}${seen.has(g.id) ? '' : ' fresh'}">
+        <div class="gift-main">
+          ${check}
+          <div class="gift-body">
+            <p class="gift-title">${esc(g.title)}</p>
+            ${g.note ? `<p class="gift-note">${esc(g.note)}</p>` : ''}
+            ${meta || status ? `<p class="gift-meta">${status}${meta}</p>` : ''}
+            ${tools ? `<p class="gift-tools">${tools}</p>` : ''}
+          </div>
+        </div>
+        ${!view.own && open.has(g.id) ? `<div class="gift-comments">${commentsHtml(comments, g.id)}</div>` : ''}
+      </li>`;
+  }
+
+  function render() {
+    // Keep a person who no longer exists out of the pickers.
+    if (me && !state.people.some((p) => p.id === me)) me = '';
+    if (list && !state.people.some((p) => p.id === list)) list = '';
+    fillSelect(meSel, me, 'Pick your name');
+    fillSelect(listSel, list, 'Pick a name');
+    const owner = state.people.find((p) => p.id === list);
+    tail.textContent = owner ? possessive(owner.name).slice(owner.name.length) : '';
+
+    const url = new URL(location.href);
+    if (list) url.searchParams.set('list', list);
+    else url.searchParams.delete('list');
+    history.replaceState(null, '', url);
+
+    const view = state.view;
+    if (!state.people.length) {
+      viewEl.innerHTML = `<div class="empty-state"><p>There are no lists yet.</p><button class="button" type="button" data-act="add-person">Add the first person</button></div>`;
+      return;
+    }
+    if (!me) {
+      viewEl.innerHTML = `<p class="hint">Pick your name in “I am”. We use it to keep your surprises hidden from you.</p>`;
+      return;
+    }
+    if (!owner || !view) {
+      viewEl.innerHTML = `<p class="hint">Pick whose list you want to see.</p>`;
+      return;
+    }
+
+    const ownerName = esc(owner.name);
+    const theirs = view.gifts.filter((g) => !g.idea);
+    const ideas = view.gifts.filter((g) => g.idea);
+    const listNotes = view.comments.filter((c) => !c.gift);
+    const gotCount = view.gifts.filter((g) => g.gotBy).length;
+
+    let html = '';
+    if (view.own) {
+      html += `
+        <p class="banner"><span>This is your list. What others got, their ideas and their comments are hidden from you, so the surprise is safe.</span></p>
+        ${giftForm(undefined, owner.name)}
+        <section class="group">
+          <h2 class="label">My list <span class="count">${theirs.length}</span></h2>
+          ${theirs.length ? `<ul class="gifts">${theirs.map((g) => giftRow(g, view)).join('')}</ul>` : `<p class="muted small">Nothing yet. Add the first gift above.</p>`}
+        </section>`;
+    } else {
+      html += `
+        <p class="banner"><span>${ownerName} cannot see the marks, the ideas or the comments here.${gotCount ? ` <strong>${gotCount} got</strong> so far.` : ''}</span></p>
+        <section class="group">
+          <h2 class="label">${esc(possessive(owner.name))} list <span class="count">${theirs.length}</span></h2>
+          ${theirs.length ? `<ul class="gifts">${theirs.map((g) => giftRow(g, view)).join('')}</ul>` : `<p class="muted small">${ownerName} has not added anything yet.</p>`}
+        </section>
+        <section class="group">
+          <h2 class="label">Ideas from others <span class="count">${ideas.length}</span></h2>
+          ${ideas.length ? `<ul class="gifts">${ideas.map((g) => giftRow(g, view)).join('')}</ul>` : ''}
+          ${giftForm(undefined, owner.name)}
+        </section>
+        <section class="group">
+          <h2 class="label">Notes about this list</h2>
+          ${commentsHtml(listNotes)}
+        </section>`;
+    }
+    // Keep what the person is typing (and the cursor) when the list draws again.
+    const keyOf = (el: HTMLInputElement) => {
+      const f = el.form;
+      return f ? `${f.dataset.form}|${f.dataset.gift ?? f.dataset.id ?? ''}|${el.name}` : '';
+    };
+    const drafts = new Map<string, string>();
+    viewEl.querySelectorAll<HTMLInputElement>('form input, form textarea').forEach((el) => {
+      if (el.value) drafts.set(keyOf(el), el.value);
+    });
+    const focused = document.activeElement as HTMLInputElement | null;
+    const focusKey = focused && viewEl.contains(focused) && focused.name ? keyOf(focused) : '';
+    viewEl.innerHTML = html;
+    viewEl.querySelectorAll<HTMLInputElement>('form input, form textarea').forEach((el) => {
+      const k = keyOf(el);
+      if (drafts.has(k)) el.value = drafts.get(k)!;
+      if (k === focusKey) el.focus();
+    });
+    seen = new Set([...view.gifts.map((g) => g.id), ...view.comments.map((c) => c.id)]);
+  }
+
+  function choose(which: 'me' | 'list', value: string) {
+    if (value === ADD) {
+      addingFor = which;
+      addPersonForm.hidden = false;
+      (addPersonForm.elements.namedItem('name') as HTMLInputElement).focus();
+      render();
+      return;
+    }
+    if (which === 'me') {
+      me = value;
+      store.set('xmas-me', me);
+      if (!list) list = me;
+    } else list = value;
+    store.set('xmas-list', list);
+    open.clear();
+    editing = confirming = '';
+    seen = new Set();
+    call();
+  }
+
+  meSel.addEventListener('change', () => choose('me', meSel.value));
+  listSel.addEventListener('change', () => choose('list', listSel.value));
+
+  addPersonForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = addPersonForm.elements.namedItem('name') as HTMLInputElement;
+    const data = await call({ action: 'addPerson', name: input.value });
+    if (!data?.person) return;
+    input.value = '';
+    addPersonForm.hidden = true;
+    if (addingFor === 'me' || !me) choose('me', data.person.id);
+    else choose('list', data.person.id);
+  });
+  addPersonForm.querySelector('[data-cancel]')!.addEventListener('click', () => { addPersonForm.hidden = true; });
+
+  viewEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const f = Object.fromEntries(new FormData(form)) as Record<string, string>;
+    const kind = form.dataset.form;
+    // Empty the fields now, so the next gift can be typed while this one saves.
+    if (kind !== 'edit') form.reset();
+    let ok = null;
+    if (kind === 'add') ok = await call({ action: 'addGift', ...f });
+    if (kind === 'edit') ok = await call({ action: 'editGift', id: form.dataset.id, ...f });
+    if (kind === 'comment') ok = await call({ action: 'comment', gift: form.dataset.gift ?? '', ...f });
+    if (ok && kind === 'edit') { editing = ''; render(); }
+    if (!ok && kind !== 'edit') {
+      // It did not save: give the text back.
+      const sel = kind === 'add' ? 'form[data-form="add"]'
+        : `form[data-form="comment"]${form.dataset.gift ? `[data-gift="${form.dataset.gift}"]` : ':not([data-gift])'}`;
+      const again = viewEl.querySelector<HTMLFormElement>(sel);
+      if (again) for (const [k, v] of Object.entries(f)) {
+        const el = again.elements.namedItem(k) as HTMLInputElement | null;
+        if (el && !el.value) el.value = v;
+      }
+    }
+  });
+
+  viewEl.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-act]');
+    if (!btn) return;
+    const id = btn.dataset.id ?? '';
+    const act = btn.dataset.act;
+    if (act === 'add-person') return choose('me', ADD);
+    if (act === 'got') {
+      btn.classList.toggle('on', !!btn.dataset.got);
+      return void call({ action: 'got', id, got: !!btn.dataset.got });
+    }
+    if (act === 'toggle') { open.has(id) ? open.delete(id) : open.add(id); render(); return; }
+    if (act === 'edit') { editing = id; render(); (viewEl.querySelector('.editing [name="title"]') as HTMLInputElement)?.focus(); return; }
+    if (act === 'cancel-edit') { editing = ''; render(); return; }
+    if (act === 'del-gift' || act === 'del-comment') {
+      if (confirming !== id) {
+        confirming = id;
+        render();
+        setTimeout(() => { if (confirming === id) { confirming = ''; render(); } }, 4000);
+        return;
+      }
+      confirming = '';
+      return void call({ action: act === 'del-gift' ? 'deleteGift' : 'deleteComment', id });
+    }
+  });
+
+  // Get the changes that others made while this tab was in the background.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !busy && !editing) call();
+  });
+
+  call();
+</script>
+
+<style is:global>
+  .xmas { max-width: 640px; }
+  .xmas .page-title { margin-bottom: 32px; }
+  .xmas .center { text-align: center; }
+  .xmas .small { font-size: 0.92rem; margin: 0; }
+
+  /* The two pickers read as one sentence: "I am Dominick, looking at Max's list". */
+  .xmas .picker {
+    display: grid;
+    gap: 6px;
+    font-family: var(--display);
+    font-size: clamp(1.7rem, 7vw, 2.4rem);
+    line-height: 1.2;
+    margin: 0 0 28px;
+    text-align: center;
+  }
+  .xmas .pick { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0 0.3em; }
+  .xmas .pick-word { color: var(--muted); }
+  .xmas .nowrap { white-space: nowrap; }
+  .xmas .select { position: relative; display: inline-block; }
+  .xmas .select select {
+    appearance: none;
+    -webkit-appearance: none;
+    font: inherit;
+    color: var(--text);
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--accent);
+    border-radius: 0;
+    padding: 0 1.05em 2px 0;
+    max-width: 78vw;
+    field-sizing: content; /* fit the name; older browsers keep the full width */
+    min-width: 3ch;
+    cursor: pointer;
+    text-overflow: ellipsis;
+  }
+  .xmas .select.empty select { color: var(--accent); }
+  .xmas .select::after {
+    content: '';
+    position: absolute;
+    right: 0.15em;
+    top: 50%;
+    width: 0.38em;
+    height: 0.38em;
+    border-right: 1.5px solid var(--accent);
+    border-bottom: 1.5px solid var(--accent);
+    transform: translateY(-70%) rotate(45deg);
+    pointer-events: none;
+    transition: transform 0.3s var(--glide);
+  }
+  .xmas .select:focus-within::after { transform: translateY(-30%) rotate(225deg); }
+  .xmas .select select:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+  .xmas input, .xmas textarea {
+    font: inherit;
+    font-size: 16px; /* 16px stops iOS from zooming in on focus */
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    width: 100%;
+    min-width: 0;
+    transition: border-color 0.2s;
+  }
+  .xmas textarea { resize: vertical; }
+  .xmas input:focus, .xmas textarea:focus { outline: 1px solid var(--text); outline-offset: 0; border-color: var(--text); }
+  .xmas .inline { display: flex; gap: 8px; align-items: stretch; }
+  .xmas .button.small { padding: 0 16px; min-height: 48px; font-size: 0.7rem; letter-spacing: 0.12em; white-space: nowrap; flex: none; }
+
+  .xmas .text-button {
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--muted);
+    background: none;
+    border: 0;
+    padding: 6px 0;
+    min-height: 32px;
+    cursor: pointer;
+  }
+  .xmas .text-button:hover { color: var(--accent); }
+
+  .xmas .add-person {
+    display: grid;
+    gap: 8px;
+    margin: -8px 0 28px;
+    padding: 18px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    animation: xmas-in 0.35s var(--glide) both;
+  }
+  .xmas .add-person .text-button { justify-self: start; }
+
+  .xmas .error {
+    border: 1px solid #b4553f;
+    color: #8a3a28;
+    padding: 12px 16px;
+    margin: 0 0 20px;
+    background: var(--surface);
+  }
+  .xmas .hint, .xmas .empty-state { text-align: center; color: var(--muted); }
+  .xmas .empty-state { display: grid; gap: 16px; justify-items: center; }
+
+  .xmas .banner {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 0.92rem;
+    color: var(--muted);
+    border-left: 2px solid var(--accent);
+    padding: 2px 0 2px 14px;
+    margin: 0 0 24px;
+  }
+  .xmas .banner strong { color: var(--accent); font-weight: 600; }
+
+  .xmas .group { margin: 0 0 36px; }
+  .xmas .group > .label { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; line-height: 1.6; }
+  .xmas .count { color: var(--accent); }
+
+  .xmas .gifts { list-style: none; margin: 0 0 16px; padding: 0; border-top: 1px solid var(--line); }
+  .xmas .gift { border-bottom: 1px solid var(--line); padding: 14px 0 10px; }
+  .xmas .gift.fresh { animation: xmas-in 0.45s var(--glide) both; }
+  .xmas .gift-main { display: flex; gap: 14px; align-items: flex-start; }
+  .xmas .gift-body { flex: 1; min-width: 0; }
+  .xmas .gift-title { margin: 0; font-size: 1.05rem; line-height: 1.4; overflow-wrap: anywhere; transition: opacity 0.3s; }
+  .xmas .gift-note { margin: 4px 0 0; color: var(--muted); font-size: 0.92rem; white-space: pre-line; overflow-wrap: anywhere; }
+  .xmas .gift-meta { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.85rem; color: var(--muted); }
+  .xmas .gift-meta a { color: var(--text); }
+  .xmas .gift-tools { margin: 2px 0 0; display: flex; flex-wrap: wrap; gap: 0 18px; }
+  .xmas .status.got { color: var(--accent); font-weight: 600; }
+  .xmas .gift.is-got .gift-title { opacity: 0.55; }
+
+  /* The check: a square that fills with moss, and the tick scales in. */
+  .xmas .check {
+    flex: none;
+    position: relative;
+    width: 44px;
+    height: 44px;
+    margin: -10px -6px -10px -10px;
+    padding: 0;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+  .xmas .check::before {
+    content: '';
+    position: absolute;
+    inset: 11px;
+    border: 1.5px solid var(--text);
+    transition: border-color 0.2s;
+  }
+  .xmas .check::after {
+    content: '';
+    position: absolute;
+    inset: 11px;
+    background: var(--accent);
+    transform: scale(0);
+    transition: transform 0.35s var(--glide);
+  }
+  .xmas .check svg {
+    position: absolute;
+    inset: 12px;
+    z-index: 1;
+    fill: none;
+    stroke: var(--bg);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0;
+    transform: scale(0.4) rotate(-12deg);
+    transition: transform 0.4s var(--glide) 0.05s, opacity 0.2s 0.05s;
+  }
+  .xmas .check.on::before { border-color: var(--accent); }
+  .xmas .check.on::after { transform: scale(1); }
+  .xmas .check.on svg { opacity: 1; transform: none; }
+  .xmas .check:disabled { cursor: default; }
+  .xmas .check:disabled::after { background: var(--muted); }
+  .xmas .check:disabled::before { border-color: var(--muted); }
+
+  .xmas .gift-form { display: grid; gap: 8px; margin: 0 0 8px; }
+  .xmas .gift-form.editing { margin: 0; }
+  .xmas .gift-form .text-button { justify-self: start; }
+  .xmas .more { display: grid; gap: 8px; }
+  .xmas .more[open] { display: grid; gap: 8px; }
+  .xmas .more summary {
+    list-style: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--muted);
+    padding: 4px 0;
+    width: max-content;
+  }
+  .xmas .more summary::-webkit-details-marker { display: none; }
+  .xmas .more summary::before { content: '+ '; color: var(--accent); }
+  .xmas .more[open] summary::before { content: '− '; }
+  .xmas .more[open] > :not(summary) { animation: xmas-in 0.35s var(--glide) both; }
+
+  .xmas .gift-comments { margin: 8px 0 4px 38px; animation: xmas-in 0.35s var(--glide) both; }
+  .xmas .comments { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 10px; }
+  .xmas .comment { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; font-size: 0.95rem; padding-left: 12px; border-left: 1px solid var(--accent); }
+  .xmas .comment.fresh { animation: xmas-in 0.4s var(--glide) both; }
+  .xmas .comment .by { font-weight: 600; }
+  .xmas .comment .text { white-space: pre-line; overflow-wrap: anywhere; }
+  .xmas .comment .text-button { grid-column: 1 / -1; justify-self: start; padding: 0; min-height: 0; font-size: 0.8rem; }
+
+  @keyframes xmas-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .xmas *, .xmas *::before, .xmas *::after { animation: none !important; transition: none !important; }
+  }
+  @media (max-width: 420px) {
+    .xmas .gift-comments { margin-left: 0; }
+  }
+</style>
