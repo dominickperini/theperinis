@@ -2,8 +2,10 @@ import type { APIRoute } from 'astro';
 import { storageReady } from '../../lib/store';
 import {
   addPerson, clean, counts, cleanLink, cleanText, deleteComment, deleteGift, getComment, getGift, getPerson,
-  listFor, makeComment, makeGift, people, removePerson, saveComment, saveGift,
+  listFor, makeComment, makeGift, people, removePerson, saveComment, saveGift, saveSizes,
 } from '../../lib/xmas';
+
+import { getPreview } from '../../lib/preview';
 
 export const prerender = false;
 
@@ -64,25 +66,44 @@ export const POST: APIRoute = async ({ request }) => {
         await removePerson(id);
         break;
       }
+      case 'preview': {
+        // The preview of a pasted link, before the gift is saved.
+        const link = cleanLink(body.url);
+        return json({ preview: link ? await getPreview(link) : null });
+      }
+      case 'sizes': {
+        await saveSizes(me.id, body.sizes);
+        break;
+      }
       case 'addGift': {
         const owner = await getPerson(listId);
         if (!owner) return fail('This list does not exist.');
-        const title = clean(body.title, 140);
-        if (!title) return fail('Please type the gift.');
         const link = cleanLink(body.link);
         if (clean(body.link, 1000) && !link) return fail('This link is not correct.');
-        await saveGift(makeGift(owner.id, me.id, title, link, cleanText(body.note, 600) || undefined));
+        const preview = link ? ((await getPreview(link)) ?? undefined) : undefined;
+        // A link alone is sufficient: the title comes from the page.
+        const title = clean(body.title, 140) || clean(preview?.title, 140);
+        if (!title) return fail(link ? 'We could not read this link. Please type the name of the gift.' : 'Please type the gift.');
+        await saveGift(
+          makeGift(owner.id, me.id, { title, link, preview, note: cleanText(body.note, 600) || undefined, size: clean(body.size, 40) || undefined }),
+        );
         break;
       }
       case 'editGift': {
         const gift = await getGift(String(body.id ?? ''));
         if (!gift) return fail('This gift is not on the list now.');
         if (gift.addedBy !== me.id) return fail('Only the person who added a gift can change it.');
-        const title = clean(body.title, 140);
-        if (!title) return fail('Please type the gift.');
         const link = cleanLink(body.link);
         if (clean(body.link, 1000) && !link) return fail('This link is not correct.');
-        await saveGift({ ...gift, title, link, note: cleanText(body.note, 600) || undefined });
+        const preview = !link ? undefined : link === gift.link && gift.previewAt ? gift.preview : ((await getPreview(link)) ?? undefined);
+        const title = clean(body.title, 140) || clean(preview?.title, 140);
+        if (!title) return fail('Please type the gift.');
+        await saveGift({
+          ...gift, title, link, preview,
+          previewAt: link ? new Date().toISOString() : undefined,
+          note: cleanText(body.note, 600) || undefined,
+          size: clean(body.size, 40) || undefined,
+        });
         break;
       }
       case 'deleteGift': {

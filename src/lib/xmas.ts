@@ -1,18 +1,25 @@
 import { randomBytes } from 'node:crypto';
 import { deleteItem, getAll, getItem, setItem } from './store';
+import { getPreview, type Preview } from './preview';
 
 // Christmas lists at /xmas. There are no passwords: each person picks
 // "I am ..." on their device. The server removes the surprise data
 // (who got what, ideas from others, comments) when a person looks at
 // their own list, so it is not in the page at all.
 
-export interface Person { id: string; name: string; createdAt: string }
+/** Sizes that help others buy the right fit. All people can see them. */
+export const SIZE_KEYS = ['top', 'bottom', 'shoe', 'ring', 'other'] as const;
+export type Sizes = Partial<Record<(typeof SIZE_KEYS)[number], string>>;
+export interface Person { id: string; name: string; createdAt: string; sizes?: Sizes }
 export interface Gift {
   id: string;
   owner: string;      // the person whose list it is on
   title: string;
   link?: string;
   note?: string;
+  size?: string;      // the size to buy, for example "M" or "10.5"
+  preview?: Preview;  // title, picture, shop and price of the link
+  previewAt?: string; // when the server last tried to read the link
   addedBy: string;    // person id
   idea: boolean;      // true when someone else added it (secret from the owner)
   gotBy?: string;     // person id
@@ -87,8 +94,32 @@ export const getComment = (id: string) => getItem<Comment>(COMMENTS, id);
 export const saveComment = (c: Comment) => setItem(COMMENTS, c.id, c);
 export const deleteComment = (id: string) => deleteItem(COMMENTS, id);
 
-export function makeGift(owner: string, addedBy: string, title: string, link?: string, note?: string): Gift {
-  return { id: newId(), owner, title, link, note, addedBy, idea: owner !== addedBy, createdAt: now() };
+export function makeGift(owner: string, addedBy: string, fields: Pick<Gift, 'title' | 'link' | 'note' | 'size' | 'preview'>): Gift {
+  return { id: newId(), owner, ...fields, previewAt: fields.link ? now() : undefined, addedBy, idea: owner !== addedBy, createdAt: now() };
+}
+
+export async function saveSizes(id: string, input: unknown) {
+  const p = await getPerson(id);
+  if (!p) return;
+  const sizes: Sizes = {};
+  const given = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>;
+  for (const key of SIZE_KEYS) {
+    const v = clean(given[key], key === 'other' ? 120 : 30);
+    if (v) sizes[key] = v;
+  }
+  await setItem(PEOPLE, id, { ...p, sizes });
+}
+
+/** Gifts from before link previews: read their links now, a small number at a time. */
+async function fillPreviews(gifts: Gift[]) {
+  const todo = gifts.filter((g) => g.link && !g.previewAt).slice(0, 3);
+  await Promise.all(
+    todo.map(async (g) => {
+      g.preview = (await getPreview(g.link!)) ?? undefined;
+      g.previewAt = now();
+      await saveGift(g);
+    }),
+  );
 }
 export function makeComment(owner: string, by: string, text: string, gift?: string): Comment {
   return { id: newId(), owner, gift, by, text, createdAt: now() };
@@ -104,11 +135,12 @@ export async function counts(): Promise<Record<string, number>> {
 /** The list as one viewer may see it. */
 export async function listFor(me: string, owner: string) {
   const all = (await getAll<Gift>(GIFTS)).filter((g) => g.owner === owner).sort(byDate);
+  await fillPreviews(all).catch(() => {});
   if (me === owner) {
     // Own list: only the gifts you added, with no status, no pairs and no comments.
     const gifts = all
       .filter((g) => !g.idea)
-      .map(({ id, owner, title, link, note, addedBy, createdAt }) => ({ id, owner, title, link, note, addedBy, idea: false, createdAt }));
+      .map(({ id, owner, title, link, note, size, preview, addedBy, createdAt }) => ({ id, owner, title, link, note, size, preview, addedBy, idea: false, createdAt }));
     return { own: true, gifts, comments: [] as Comment[] };
   }
   const comments = (await getAll<Comment>(COMMENTS)).filter((c) => c.owner === owner).sort(byDate);
