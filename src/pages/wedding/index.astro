@@ -13,6 +13,23 @@ const dateSub = rest.length ? weekday : '';
 
 <Layout>
   <section class="hero">
+    <!-- A short drone film that loops with no sound. The poster shows first. -->
+    <div class="hero-film">
+      <video
+        muted
+        loop
+        playsinline
+        autoplay
+        preload="auto"
+        poster="/video/hero-poster.jpg"
+        aria-label="Drone film of two people on a green mountain ridge above high cliffs"
+        data-loop
+      >
+        <source src="/video/hero-960.mp4" type="video/mp4" media="(max-width: 720px)" />
+        <source src="/video/hero-1600.mp4" type="video/mp4" />
+      </video>
+    </div>
+
     <div class="wide hero-text">
       <h1 class="names">
         <span class="line"><span class="rise" style="--i: 1">{wedding.couple.first}</span></span>
@@ -62,18 +79,25 @@ const dateSub = rest.length ? weekday : '';
 
 <style>
   /* ---------- Hero ---------- */
-  /* The save-the-date card fills the first screen. No photo: the album below has them. */
-  .hero {
-    min-height: calc(100svh - 160px);
-    display: flex;
-    align-items: center;
-    padding: clamp(24px, 6vw, 72px) 0 clamp(64px, 10vw, 128px);
+  .hero { margin-top: -24px; padding-bottom: clamp(64px, 10vw, 128px); }
+  .hero-film { padding: 0 var(--gutter); max-width: 1600px; margin: 0 auto; }
+  .hero-film video {
+    display: block;
+    width: 100%;
+    height: min(78svh, 860px);
+    min-height: 320px;
+    object-fit: cover;
+    background: var(--stone);
+    animation: film-in 1.4s var(--glide) 0.1s both;
   }
-  .hero > .wide { width: 100%; }
+  @keyframes film-in { from { opacity: 0; transform: scale(1.03); } }
+  @media (max-width: 720px) { .hero-film video { height: 58svh; } }
+  @media (prefers-reduced-motion: reduce) { .hero-film video { animation: none; } }
 
   .hero-text {
     display: grid;
     gap: 32px;
+    margin-top: clamp(28px, 5vw, 56px);
   }
   @media (min-width: 960px) {
     .hero-text { grid-template-columns: 7fr 5fr; align-items: end; gap: 56px; }
