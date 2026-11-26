@@ -1,7 +1,7 @@
 // Places where our photos were taken. Points are city level only (one decimal),
 // never an exact spot. Photo numbers are the pNN files in src/assets/photos.
 // To add a photo to a place, add its number to `photos`.
-import { byNumber, type Media } from './media';
+import { byNumber, photoCount, type Media } from './media';
 
 export interface Place {
   id: string;
@@ -37,7 +37,7 @@ export const places: Place[] = list.map((p) => ({ ...p, photos: p.photos.map(byN
 
 const placed = new Set(list.flatMap((p) => p.photos));
 /** Photos with no known place. */
-export const unplaced: Media[] = Array.from({ length: 59 }, (_, i) => i + 1)
+export const unplaced: Media[] = Array.from({ length: photoCount }, (_, i) => i + 1)
   .filter((n) => !placed.has(n))
   .map(byNumber);
 
