@@ -43,8 +43,8 @@ const caption = [num, media.note].filter(Boolean).join(' · ');
         <Picture
           src={media.image}
           alt={media.alt}
-          formats={['avif', 'webp']}
-          widths={[...[480, 800, 1200, 1600, 2000].filter((w) => w < media.image.width), media.image.width]}
+          formats={['webp']}
+          widths={[...[480, 800, 1200].filter((w) => w < media.image.width), Math.min(media.image.width, 1600)]}
           quality={82}
           sizes={sizes}
           loading={eager ? 'eager' : 'lazy'}
