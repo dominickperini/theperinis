@@ -121,7 +121,7 @@ export const POST: APIRoute = async ({ request }) => {
         const team = gift.team ?? [];
         if (body.got) {
           if (gift.gotBy && gift.gotBy !== me.id) return fail('Someone else got this gift already.');
-          if (team.length && !team.includes(me.id)) return fail('Other people pair up on this gift. Join them first.');
+          if (team.length && !team.includes(me.id)) return fail('Other people tag team on this gift. Join them first.');
           await saveGift({ ...gift, gotBy: me.id, gotAt: new Date().toISOString() });
         } else {
           if (gift.gotBy && gift.gotBy !== me.id && !team.includes(me.id)) return fail('Only the person who got it can remove the mark.');
@@ -134,11 +134,11 @@ export const POST: APIRoute = async ({ request }) => {
         // Pair up: two or more people buy one gift together.
         const gift = await getGift(String(body.id ?? ''));
         if (!gift) return fail('This gift is not on the list now.');
-        if (gift.owner === me.id) return fail('You cannot pair up on your own gifts.');
+        if (gift.owner === me.id) return fail('You cannot tag team on your own gifts.');
         if (gift.gotBy) return fail('Someone got this gift already.');
         const team = (gift.team ?? []).filter((id) => id !== me.id);
         if (body.on) {
-          if (team.length >= 8) return fail('This pair is full.');
+          if (team.length >= 8) return fail('This team is full.');
           team.push(me.id);
         }
         const { team: _old, ...rest } = gift;
