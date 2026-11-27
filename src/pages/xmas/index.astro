@@ -397,6 +397,8 @@ const tip = piece(7, 0, 46, 'tip');
       </form>` : ''}`;
   }
 
+  const TEAM_MAX = 8; // the server has the same limit
+
   /** The line under a gift title that says who got it or who pairs up. */
   function statusOf(g: Gift) {
     const team = g.team ?? [];
@@ -407,7 +409,7 @@ const tip = piece(7, 0, 46, 'tip');
     if (team.length === 1) {
       return { kind: 'pair', who: team, text: team[0] === me ? 'You want to tag team' : `${nameOf(team[0])} wants to tag team` };
     }
-    if (team.length > 1) return { kind: 'pair', who: team, text: `${names(team)} tag team on this` };
+    if (team.length > 1) return { kind: 'pair', who: team, text: `${names(team)} tag team · ${team.length}-way split` };
     return { kind: '', who: [] as string[], text: '' };
   }
 
@@ -427,14 +429,18 @@ const tip = piece(7, 0, 46, 'tip');
     const team = g.team ?? [];
     const inTeam = team.includes(me);
     let acts = '';
+    let hint = '';
     if (g.gotBy) {
       if (g.gotBy === me || inTeam) acts = act('got', g.id, ICON.undo, 'Not got after all');
     } else if (team.length && !inTeam) {
-      acts = act('pair', g.id, ICON.rings, `Join ${names(team)}`, 'data-on="1"');
+      // A team stays open: a third person (and more) can join for a larger split.
+      const label = team.length === 1 ? `Join ${names(team)}` : `Join for a ${team.length + 1}-way split`;
+      acts = team.length < TEAM_MAX ? act('pair', g.id, ICON.rings, label, 'data-on="1"') : '';
     } else if (inTeam) {
       acts =
         act('got', g.id, ICON.bow, team.length > 1 ? 'We got it' : 'I got it', 'data-got="1"') +
         act('pair', g.id, ICON.undo, team.length > 1 ? 'Leave the team' : 'Stop looking');
+      if (team.length > 1 && team.length < TEAM_MAX) hint = `The team is open. One more person can join for a ${team.length + 1}-way split.`;
     } else {
       acts = act('got', g.id, ICON.bow, 'I got it', 'data-got="1"') + act('pair', g.id, ICON.rings, 'Tag team', 'data-on="1"');
     }
@@ -442,7 +448,7 @@ const tip = piece(7, 0, 46, 'tip');
     const writing = open.has(g.id);
     const noteChip = writing ? '' : `<button class="chip" type="button" data-act="toggle" data-id="${g.id}">${ICON.note}Note</button>`;
     const notes = comments.length || writing ? `<div class="row-notes">${commentsHtml(comments, g.id, 'Write to the others', writing)}</div>` : '';
-    return `<div class="row-acts">${acts}${noteChip}${tools}</div>${notes}`;
+    return `<div class="row-acts">${acts}${noteChip}${tools}${hint ? `<span class="row-hint">${hint}</span>` : ''}</div>${notes}`;
   }
 
   function giftRow(g: Gift, view: View, ownerName: string) {
@@ -450,7 +456,7 @@ const tip = piece(7, 0, 46, 'tip');
     const st = view.own ? { kind: '', who: [] as string[], text: '' } : statusOf(g);
     const pop = st.kind === 'got' && gotBefore.has(g.id) && !gotBefore.get(g.id);
     const faces = st.who.length
-      ? `<span class="faces">${st.who.map((id) => `<span class="face">${esc(initial(id))}</span>`).join('')}${st.kind === 'pair' && st.who.length === 1 ? '<span class="face seat">+</span>' : ''}</span>`
+      ? `<span class="faces">${st.who.map((id) => `<span class="face">${esc(initial(id))}</span>`).join('')}${st.kind === 'pair' && st.who.length < TEAM_MAX ? '<span class="face seat">+</span>' : ''}</span>`
       : '';
     const meta = [
       g.size ? `<span class="size-tag">Size ${esc(g.size)}</span>` : '',
@@ -598,7 +604,7 @@ const tip = piece(7, 0, 46, 'tip');
         <span class="is-pair">${svg(PARCELS[0] + BOW, '0 0 40 40')}Tag team</span>
         <span class="is-got">${svg(PARCELS[0] + BOW, '0 0 40 40')}Got</span>
       </p>
-      <p class="help center guide">“I got it” tells the others that you have the gift. “Tag team” asks for a partner to buy it together.</p>` : ''}
+      <p class="help center guide">“I got it” tells the others that you have the gift. “Tag team” asks for partners to buy it together. Two, three, or more people can share one gift.</p>` : ''}
       ${sizesHtml(owner, false)}
       <section class="group">
         <h2 class="label">${esc(ownerName)} asked for</h2>
@@ -1125,6 +1131,7 @@ const tip = piece(7, 0, 46, 'tip');
   .xmas .row-acts .quiet:first-child { margin-left: 0; }
   .xmas .row-acts:not(:has(.act, .chip)) { margin-top: -8px; padding-bottom: 10px; }
   .xmas .row-acts .chip { min-height: 42px; }
+  .xmas .row-hint { flex-basis: 100%; font-size: 0.85rem; color: var(--muted); }
   .xmas .row-notes { padding: 0 0 18px 54px; animation: xmas-in 0.35s var(--glide) both; }
   .xmas .row-notes .comments { margin-top: 0; }
   .xmas .row-notes .note-field:first-child { margin-top: 0; }
