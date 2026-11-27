@@ -155,10 +155,22 @@ export function makeComment(owner: string, by: string, text: string, gift?: stri
 }
 
 /** How many gifts each person asked for. Ideas from others are not counted, so this is safe to show to all. */
-export async function counts(): Promise<Record<string, number>> {
-  const out: Record<string, number> = {};
-  for (const g of await getAll<Gift>(GIFTS)) if (!g.idea) out[g.owner] = (out[g.owner] ?? 0) + 1;
-  return out;
+/**
+ * For the row of ornaments, in one read of the gifts:
+ * - count: how many gifts each person asked for.
+ * - mine: on which lists the viewer has a gift (they got it, or their team got it).
+ *   Only the viewer's own marks, and never their own list, so no person gets a hint about their gifts.
+ */
+export async function tallies(viewer: string): Promise<{ count: Record<string, number>; mine: Record<string, number> }> {
+  const count: Record<string, number> = {};
+  const mine: Record<string, number> = {};
+  for (const g of await getAll<Gift>(GIFTS)) {
+    if (!g.idea) count[g.owner] = (count[g.owner] ?? 0) + 1;
+    if (viewer && g.gotBy && g.owner !== viewer && (g.gotBy === viewer || (g.team ?? []).includes(viewer))) {
+      mine[g.owner] = (mine[g.owner] ?? 0) + 1;
+    }
+  }
+  return { count, mine };
 }
 
 /** The list as one viewer may see it. */
