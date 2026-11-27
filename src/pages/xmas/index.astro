@@ -88,7 +88,7 @@ const tip = piece(7, 0, 46, 'tip');
 <script>
   type Sizes = Record<string, string>;
   type Preview = { title?: string; image?: string; site?: string; price?: string };
-  type Person = { id: string; name: string; count: number; sizes?: Sizes };
+  type Person = { id: string; name: string; count: number; mine?: number; sizes?: Sizes };
   type Gift = {
     id: string; owner: string; title: string; link?: string; note?: string;
     addedBy: string; idea: boolean; gotBy?: string; team?: string[]; createdAt: string;
@@ -274,23 +274,70 @@ const tip = piece(7, 0, 46, 'tip');
     return (document.getElementById(`seg-${name}`) as HTMLTemplateElement).innerHTML;
   }
 
+  /** A small evergreen wreath around an ornament. It follows the shape of the ball, and it is open at the cap. */
+  function wreath(h: number) {
+    const [bw, bh] = [[46, 46], [46, 52], [40, 54]][h % 3];
+    const pad = 13;
+    const W = bw + pad * 2, H = bh + pad * 2, cx = W / 2, cy = H / 2, rx = bw / 2 + 5, ry = bh / 2 + 5;
+    let seed = (h % 9973) + 7;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const f = (n: number) => n.toFixed(1);
+    const from = -90 + 26, to = 270 - 26, n = 30;
+    let needles = '', stem = '';
+    for (let i = 0; i <= n; i++) {
+      const t = ((from + ((to - from) * i) / n) * Math.PI) / 180;
+      const x = cx + rx * Math.cos(t), y = cy + ry * Math.sin(t);
+      stem += `${i ? 'L' : 'M'}${f(x)} ${f(y)}`;
+      // The direction along the ring, and the direction away from the ball.
+      let tx = -rx * Math.sin(t), ty = ry * Math.cos(t);
+      let nx = ry * Math.cos(t), ny = rx * Math.sin(t);
+      const tl = Math.hypot(tx, ty), nl = Math.hypot(nx, ny);
+      tx /= tl; ty /= tl; nx /= nl; ny /= nl;
+      for (const side of [1, -1]) {
+        const lean = ((30 + rnd() * 16) * Math.PI) / 180, len = 5 + rnd() * 2.5;
+        const dx = tx * Math.cos(lean) + side * nx * Math.sin(lean), dy = ty * Math.cos(lean) + side * ny * Math.sin(lean);
+        needles += `M${f(x)} ${f(y)}l${f(dx * len)} ${f(dy * len)}`;
+      }
+    }
+    const berry = (deg: number, out: number) => {
+      const t = (deg * Math.PI) / 180;
+      return `<circle cx="${f(cx + (rx + out) * Math.cos(t))}" cy="${f(cy + (ry + out) * Math.sin(t))}" r="2.1"/>`;
+    };
+    return `<svg class="wreath" viewBox="0 0 ${W} ${H}" aria-hidden="true"><path class="w-needles" d="${needles}"/><path class="w-stem" d="${stem}"/><g class="w-berries">${berry(82, -0.5)}${berry(98, -0.5)}${berry(90, 3)}</g></svg>`;
+  }
+
+  // ---------- your own order of people ----------
+  // Each person can drag the ornaments into their own order. The order stays in this
+  // browser only (not on the server), so no other person can see who is first.
+  const orderKey = () => `xmas-order-${me}`;
+  function savedOrder(): string[] {
+    try { const v = JSON.parse(store.get(orderKey()) || '[]'); return Array.isArray(v) ? v.map(String) : []; } catch { return []; }
+  }
+  /** The people in the order of the row: you first, then your own order, then the others by name. */
+  function ordered(): Person[] {
+    const saved = picking ? [] : savedOrder();
+    const rank = (p: Person) => (p.id === me && !picking ? -1 : saved.includes(p.id) ? saved.indexOf(p.id) : saved.length);
+    return [...state.people].sort((a, b) => rank(a) - rank(b)); // the sort is stable, so the rest stays by name
+  }
+
+  let stayPut = false;
   function renderBough() {
-    const key = JSON.stringify(state.people.map((p) => [p.id, p.name]));
+    if (drag?.lifted) return; // do not draw the row again while an ornament is in the hand
+    const order = ordered();
+    const key = JSON.stringify(order.map((p) => [p.id, p.name]));
     if (key !== boughKey) {
       boughKey = key;
-      // The person's own ornament is first.
-      const order = [...state.people].sort((a, b) => Number(b.id === me) - Number(a.id === me));
       const cells = order.map((p, i) => {
         const h = hash(p.id);
         return `
           <button class="orn shape-${h % 3}" type="button" role="tab" data-person="${p.id}"
             style="--drop:${10 + (h % 5) * 5}px;--d:${-((h % 7) * 0.7).toFixed(1)}s;--i:${i}">
             ${segment(String(h % 4))}
-            <span class="hang">
+            <span class="carry"><span class="hang">
               <span class="thread"></span>
-              <span class="ball">${esc(p.name.trim().charAt(0).toUpperCase())}</span>
+              <span class="ball">${esc(p.name.trim().charAt(0).toUpperCase())}${wreath(h)}</span>
               <span class="who"></span>
-            </span>
+            </span></span>
           </button>`;
       });
       boughEl.innerHTML = `
@@ -313,10 +360,14 @@ const tip = piece(7, 0, 46, 'tip');
       el.setAttribute('aria-selected', String(on));
       const p = person(id)!;
       el.querySelector('.who')!.textContent = id === me && !picking ? 'You' : p.name;
-      el.setAttribute('aria-label', picking ? `I am ${p.name}` : id === me ? 'My list' : `${possessive(p.name)} list`);
+      // A wreath: this viewer has a gift for that person. Never on the viewer's own ornament.
+      const gift = !picking && id !== me && (p.mine ?? 0) > 0;
+      el.classList.toggle('has-wreath', gift);
+      el.setAttribute('aria-label', picking ? `I am ${p.name}` : id === me ? 'My list' : `${possessive(p.name)} list${gift ? `. You have a gift for ${p.name}` : ''}`);
     });
     const onEl = boughEl.querySelector<HTMLElement>('.orn.on');
-    if (onEl) {
+    if (stayPut) stayPut = false; // after a drag, the row stays where the person left it
+    else if (onEl) {
       // Bring the selected ornament into view (only when it is near an edge or out of view).
       const a = onEl.getBoundingClientRect();
       const b = boughWrap.getBoundingClientRect();
@@ -511,7 +562,10 @@ const tip = piece(7, 0, 46, 'tip');
 
     $('person-submit').textContent = picking || !state.people.length ? 'This is me' : 'Add this person';
     whoEl.hidden = picking;
-    if (!picking) whoEl.innerHTML = `You are ${esc(nameOf(me))}. <button class="quiet" type="button" id="not-me">Not you?</button>`;
+    if (!picking) {
+      const wreaths = state.people.some((p) => p.id !== me && (p.mine ?? 0) > 0);
+      whoEl.innerHTML = `You are ${esc(nameOf(me))}. <button class="quiet" type="button" id="not-me">Not you?</button>${wreaths ? '<span class="wreath-key">A wreath shows that you have a gift for that person.</span>' : ''}${state.people.length > 2 && !savedOrder().length ? `<span class="wreath-key">${matchMedia('(pointer: coarse)').matches ? 'Hold an ornament, then drag it to put your people first.' : 'Drag an ornament to put your people first.'}</span>` : ''}`;
+    }
 
     // Keep what the person types (and the cursor) when the list draws again.
     const keyOf = (el: HTMLInputElement) => {
@@ -651,6 +705,7 @@ const tip = piece(7, 0, 46, 'tip');
   }
 
   boughEl.addEventListener('click', (e) => {
+    if (Date.now() < ignoreClickUntil) return; // the end of a drag is not a tap
     const el = (e.target as HTMLElement).closest<HTMLElement>('.orn[data-person]');
     if (!el) return;
     if (el.dataset.person === '+') {
@@ -660,6 +715,128 @@ const tip = piece(7, 0, 46, 'tip');
     }
     pick(el.dataset.person!);
   });
+
+  // ---------- drag an ornament to a new place ----------
+  // Mouse: press and move. Touch: hold for a moment, then move (a quick swipe still scrolls the row).
+  type Drag = { el: HTMLElement; id: string; pointerId: number; startX: number; startY: number; x: number; grab: number; lifted: boolean; moved: boolean; timer: number; raf: number; armL: boolean; armR: boolean };
+  let drag: Drag | null = null;
+  let ignoreClickUntil = 0;
+  const movable = (el: Element | null): el is HTMLElement =>
+    !!el && el.matches('.orn[data-person]') && (el as HTMLElement).dataset.person !== '+' && (el as HTMLElement).dataset.person !== me;
+  const carryOf = (el: HTMLElement) => el.querySelector<HTMLElement>('.carry')!;
+
+  function lift() {
+    if (!drag || drag.lifted) return;
+    drag.lifted = true;
+    drag.grab = drag.startX - drag.el.getBoundingClientRect().left;
+    drag.el.classList.add('dragging');
+    boughEl.classList.add('is-dragging');
+    place();
+    const loop = () => { if (!drag?.lifted) return; edgeScroll(); drag.raf = requestAnimationFrame(loop); };
+    drag.raf = requestAnimationFrame(loop);
+  }
+
+  /** The neighbor glides from its old place to its new place. */
+  function glide(other: HTMLElement, oldLeft: number) {
+    const c = carryOf(other);
+    const d = oldLeft - other.getBoundingClientRect().left;
+    c.style.transition = 'none';
+    c.style.transform = `translateX(${d}px)`;
+    void c.offsetWidth;
+    c.style.transition = '';
+    c.style.transform = '';
+  }
+
+  /** Put the ornament in the hand below the pointer, and change places with a neighbor when it goes past the middle of it. */
+  function place() {
+    if (!drag?.lifted) return;
+    const { el } = drag;
+    const c = carryOf(el);
+    c.style.transform = '';
+    for (let i = 0; i < 12; i++) {
+      const r = el.getBoundingClientRect();
+      const center = drag.x - drag.grab + r.width / 2;
+      const prev = el.previousElementSibling, next = el.nextElementSibling;
+      if (movable(prev) && center < prev.getBoundingClientRect().left + r.width / 2) {
+        const old = prev.getBoundingClientRect().left;
+        boughEl.insertBefore(el, prev);
+        glide(prev, old);
+        drag.moved = true;
+      } else if (movable(next) && center > next.getBoundingClientRect().left + r.width / 2) {
+        const old = next.getBoundingClientRect().left;
+        boughEl.insertBefore(el, next.nextSibling);
+        glide(next, old);
+        drag.moved = true;
+      } else break;
+    }
+    const r = el.getBoundingClientRect();
+    c.style.transform = `translate(${(drag.x - drag.grab - r.left).toFixed(1)}px, 8px) scale(1.08)`;
+  }
+
+  /** Near an edge of the row, the row moves so that all places can be reached. */
+  function edgeScroll() {
+    if (!drag?.lifted) return;
+    const b = boughWrap.getBoundingClientRect();
+    const zone = 56;
+    const inL = drag.x < b.left + zone, inR = drag.x > b.right - zone;
+    // An edge starts to move the row only after the pointer went toward it. An ornament
+    // that is lifted near an edge must not make the row run away.
+    if (!inL || drag.x < drag.startX - 12) drag.armL = true;
+    if (!inR || drag.x > drag.startX + 12) drag.armR = true;
+    const v = inL && drag.armL ? -(b.left + zone - drag.x) : inR && drag.armR ? drag.x - (b.right - zone) : 0;
+    if (!v) return;
+    const before = boughWrap.scrollLeft;
+    boughWrap.scrollLeft += Math.max(-14, Math.min(14, v / 4));
+    if (boughWrap.scrollLeft !== before) place();
+  }
+
+  function endDrag(cancel = false) {
+    if (!drag) return;
+    const d = drag;
+    drag = null;
+    clearTimeout(d.timer);
+    cancelAnimationFrame(d.raf);
+    if (!d.lifted) return;
+    d.el.classList.remove('dragging');
+    boughEl.classList.remove('is-dragging');
+    carryOf(d.el).style.transform = '';
+    ignoreClickUntil = Date.now() + 450;
+    if (d.moved) {
+      // Keep the new order for this person, in this browser.
+      const ids = [...boughEl.querySelectorAll<HTMLElement>('.orn[data-person]')].filter(movable).map((el) => el.dataset.person!);
+      store.set(orderKey(), JSON.stringify(ids));
+      boughKey = JSON.stringify(ordered().map((p) => [p.id, p.name])); // the row is in this order already
+      stayPut = true;
+      render();
+    } else if (!cancel) {
+      pick(d.id); // a long press with no movement is a tap
+    }
+  }
+
+  boughEl.addEventListener('pointerdown', (e) => {
+    if (picking || drag || e.button !== 0) return;
+    const el = (e.target as HTMLElement).closest<HTMLElement>('.orn[data-person]');
+    if (!movable(el)) return;
+    drag = { el, id: el.dataset.person!, pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, x: e.clientX, grab: 0, lifted: false, moved: false, timer: 0, raf: 0, armL: false, armR: false };
+    if (e.pointerType !== 'mouse') drag.timer = window.setTimeout(lift, 320);
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    drag.x = e.clientX;
+    const far = Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY);
+    if (!drag.lifted) {
+      if (e.pointerType === 'mouse') { if (far > 6) lift(); }
+      else if (far > 10) endDrag(true); // a swipe: let the row scroll
+      return;
+    }
+    if (far > 6) drag.moved = drag.moved || Math.abs(e.clientX - drag.startX) > 6;
+    place();
+  });
+  window.addEventListener('pointerup', (e) => { if (drag && e.pointerId === drag.pointerId) endDrag(); });
+  window.addEventListener('pointercancel', (e) => { if (drag && e.pointerId === drag.pointerId) endDrag(true); });
+  // While an ornament is in the hand, the page and the row do not scroll below the finger.
+  boughWrap.addEventListener('touchmove', (e) => { if (drag?.lifted) e.preventDefault(); }, { passive: false });
+  boughEl.addEventListener('contextmenu', (e) => { if (drag) e.preventDefault(); });
 
   whoEl.addEventListener('click', (e) => {
     if ((e.target as HTMLElement).id !== 'not-me') return;
@@ -960,6 +1137,23 @@ const tip = piece(7, 0, 46, 'tip');
     letter-spacing: 0.03em;
     color: var(--muted);
   }
+  /* Drag an ornament to a new place. The branch stays; the ornament moves. */
+  .xmas .carry { position: absolute; inset: 0; display: block; transition: transform 0.35s var(--glide); }
+  .xmas .orn[data-person] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  .xmas .orn.dragging { z-index: 2; cursor: grabbing; }
+  .xmas .orn.dragging .carry { transition: none; }
+  .xmas .orn.dragging .ball { box-shadow: 0 10px 18px -10px rgb(42 40 36 / 0.45); }
+  .xmas .bough.is-dragging .orn:not(.dragging) .ball { transform: none; }
+  /* The wreath: you have a gift for this person. */
+  .xmas .wreath { position: absolute; inset: -13px; width: calc(100% + 26px); height: calc(100% + 26px); overflow: visible; pointer-events: none; opacity: 0; transform: scale(0.7) rotate(-25deg); transition: opacity 0.3s, transform 0.8s var(--glide); }
+  .xmas .has-wreath .wreath { opacity: 1; transform: none; }
+  .xmas .wreath .w-needles { stroke: var(--accent); stroke-width: 1.1; }
+  .xmas .wreath .w-stem { stroke: var(--accent); stroke-width: 0.9; }
+  .xmas .wreath .w-berries { fill: #b4553f; stroke: var(--bg); stroke-width: 0.8; }
+  .xmas .orn.has-wreath .who { transform: translateY(8px); }
+  .xmas .orn.has-wreath.on .who { transform: translateY(13px); }
+  .xmas .who { transition: transform 0.45s var(--glide); }
+  .xmas .wreath-key { display: block; margin-top: 2px; font-size: 0.8rem; }
   .xmas .orn:is(:hover, :focus-visible) .ball { transform: translateY(3px); }
   .xmas .orn:focus-visible { outline: none; }
   .xmas .orn:focus-visible .ball { outline: 2px solid var(--accent); outline-offset: 3px; }

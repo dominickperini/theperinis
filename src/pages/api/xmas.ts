@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 import { storageReady } from '../../lib/store';
 import {
-  addPerson, clean, counts, cleanLink, cleanText, deleteComment, deleteGift, getComment, getGift, getPerson,
-  listFor, makeComment, makeGift, people, removePerson, saveComment, saveGift, saveSizes,
+  addPerson, clean, cleanLink, cleanText, deleteComment, deleteGift, getComment, getGift, getPerson,
+  listFor, makeComment, makeGift, people, removePerson, saveComment, saveGift, saveSizes, tallies,
 } from '../../lib/xmas';
 
 import { getPreview } from '../../lib/preview';
@@ -17,10 +17,12 @@ const json = (body: unknown, status = 200) =>
 const fail = (error: string, status = 400) => json({ error }, status);
 
 async function state(me: string, list: string) {
-  const [everyone, count] = await Promise.all([people(), counts()]);
+  const everyone = await people();
   const known = (id: string) => everyone.some((p) => p.id === id);
+  // "mine" holds only the marks of the viewer, so it is safe to send to that viewer.
+  const { count, mine } = await tallies(known(me) ? me : '');
   const view = me && list && known(me) && known(list) ? await listFor(me, list) : null;
-  return { people: everyone.map((p) => ({ ...p, count: count[p.id] ?? 0 })), view };
+  return { people: everyone.map((p) => ({ ...p, count: count[p.id] ?? 0, mine: mine[p.id] ?? 0 })), view };
 }
 
 export const GET: APIRoute = async ({ url }) => {
