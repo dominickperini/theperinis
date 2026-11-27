@@ -1,0 +1,398 @@
+---
+// The Details page, short version: all that a guest needs on about two
+// screens. Nothing needs a click.
+//   variant "c": three lines of stops with small icons, like the Milestones
+//                line (before you come, the weekend, milestones).
+//   variant "d": a board of tiles, each with a small flat picture.
+import Arrow from '../Arrow.astro';
+import Milestones from '../Milestones.astro';
+import { schedule, travel, wedding, registry, faq } from '../../data/wedding';
+
+interface Props { variant?: 'c' | 'd'; }
+const { variant = 'c' } = Astro.props;
+const D = variant === 'd';
+
+const [weekday, ...rest] = wedding.date.split(', ');
+const deadline = wedding.rsvpDeadline.replace(/^\w+, /, '');
+const deadlineShort = deadline.replace(/, \d{4}$/, '');
+const days = schedule.map((d) => ({ ...d, short: d.day.split(',')[0] }));
+const events = days.flatMap((d) => d.events.map((e) => ({ ...e, day: d.short })));
+
+// ---- Version C: small line icons on a 48 x 48 grid, one weight, simple shapes ----
+const icon = {
+  reply: `<rect class="fill" x="9" y="14" width="30" height="21" rx="1.5"/><path d="M9.5 15.5L24 26l14.5-10.500"/>`,
+  travel: `<g transform="translate(24 24) rotate(45) scale(1.45) translate(-12 -12)"><path class="fill" d="M12 2c.8 0 1.3.9 1.3 2v5.2l7.7 4.500v2l-7.700-2.300v4.800l2.300 1.700V21L12 20l-3.600 1v-1.100l2.300-1.700v-4.800L3 15.700v-2l7.700-4.500V4c0-1.100.5-2 1.300-2z"/></g>`,
+  stay: `<path d="M9 14v21M9 30h30v5"/><path class="fill" d="M9 23h26a4 4 0 0 1 4 4v3H9z"/><rect x="13" y="18" width="10" height="5" rx="2.5"/>`,
+  gifts: `<rect class="fill" x="11" y="21" width="26" height="16"/><rect x="9" y="15" width="30" height="6"/><path d="M24 15v22M24 15c-3-6-10-6-9-2s6 2 9 2c3 0 8 2 9-2s-6-4-9 2"/>`,
+};
+const eventIcons: [RegExp, string][] = [
+  [/welcome|drinks/i, `<g transform="rotate(-12 18 24)"><path class="fill" d="M14 11h8l-1 11a3 3 0 0 1-6 0z"/><path d="M18 25v10M14 35h8"/></g><g transform="rotate(12 30 24)"><path class="fill" d="M26 11h8l-1 11a3 3 0 0 1-6 0z"/><path d="M30 25v10M26 35h8"/></g><path d="M24 5v4M22 7h4"/>`],
+  [/ceremony/i, `<circle cx="19" cy="28" r="9"/><circle cx="29" cy="28" r="9"/><path class="fill" d="M16 13h6l-3 5z"/>`],
+  [/cocktail/i, `<path class="fill" d="M12 12h24L24 26z"/><path d="M24 26v11M17 37h14M31 7l-9 14"/>`],
+  [/last|send|farewell/i, `<path class="fill" d="M29 10a14 14 0 1 0 9 25 12 12 0 0 1-9-25z"/><path d="M13 11v5M10.500 13.500h5"/>`],
+  [/dinner|danc/i, `<path d="M19 34V14l15-3v19"/><circle class="fill" cx="15.500" cy="34" r="3.500"/><circle class="fill" cx="30.500" cy="30" r="3.500"/>`],
+];
+const iconFor = (name: string) => eventIcons.find(([re]) => re.test(name))?.[1] ?? `<circle class="fill" cx="24" cy="24" r="5"/>`;
+
+// ---- Version D: flat pictures on a 120 x 96 grid. Moss, light moss, granite,
+// and one small gold item in each. The ground is at y = 84. ----
+const ground = `<path class="ground" d="M4 84.500h112"/>`;
+const pic = {
+  // An envelope: the flap closes, then the seal.
+  reply: `<rect class="l a-rise" x="24" y="32" width="72" height="52"/>
+    <path class="m a-fold" style="--i:2" d="M24 32h72L60 62z"/>
+    <circle class="y a-pop" style="--i:4" cx="60" cy="60" r="6"/>${ground}`,
+  // Mountains: the sun comes up and a plane comes in.
+  travel: `<circle class="y a-rise" style="--i:3" cx="90" cy="26" r="9"/>
+    <path class="l a-rise" d="M8 84l34-48 34 48z"/>
+    <path class="m a-rise" style="--i:1" d="M38 84l34-42 38 42z"/>
+    <path class="p a-rise" style="--i:1" d="M72 42l-8.100 10 4.100 3 4-4 4 4 4.200-3.700z"/>
+    <g class="a-fly" style="--i:4"><g transform="translate(30 20) rotate(72) scale(0.8) translate(-12 -12)"><path class="g" d="M12 2c.8 0 1.3.9 1.3 2v5.2l7.7 4.500v2l-7.700-2.300v4.800l2.300 1.700V21L12 20l-3.600 1v-1.100l2.300-1.700v-4.800L3 15.700v-2l7.700-4.500V4c0-1.100.5-2 1.300-2z"/></g></g>${ground}`,
+  // A cabin in the pines: the window lights and the moon comes up.
+  stay: `<path class="l a-rise" d="M12 84l12-28 12 28zM16 64l8-20 8 20z"/>
+    <path class="l a-rise" style="--i:1" d="M86 84l11-26 11 26zM90 66l7-18 7 18z"/>
+    <path class="m a-rise" style="--i:1" d="M32 84l28-56 28 56z"/>
+    <path class="p a-rise" style="--i:1" d="M54 84V68h12v16z"/>
+    <circle class="y a-pop" style="--i:4" cx="60" cy="54" r="5"/>
+    <path class="g a-rise" style="--i:3" d="M100 14a9 9 0 1 0 6 16 7.500 7.500 0 0 1-6-16z"/>${ground}`,
+  // The castle: the flag goes out.
+  days: `<path class="l a-rise" d="M24 84V40h-2v-8h5v4h4v-4h4v4h4v-4h5v8h-2v44z"/>
+    <path class="l a-rise" style="--i:1" d="M78 84V40h-2v-8h5v4h4v-4h4v4h4v-4h5v8h-2v44z"/>
+    <path class="m a-rise" style="--i:2" d="M40 84V46h6v4h6v-4h6v4h4v-4h6v4h6v-4h6v38z"/>
+    <path class="p a-rise" style="--i:2" d="M54 84V72a6 6 0 0 1 12 0v12z"/>
+    <path class="g a-rise" style="--i:1" d="M86.500 32V12h1v20z"/>
+    <path class="y a-unfurl" style="--i:5" d="M88 12l13 4.500-13 4.500z"/>${ground}`,
+  // A compass: the needle turns and stops.
+  know: `<circle class="l a-rise" cx="60" cy="50" r="34"/>
+    <circle class="p a-rise" cx="60" cy="50" r="27"/>
+    <path class="g a-rise" d="M59.500 25h1v5h-1zM59.500 70h1v5h-1zM35 49.500h5v1h-5zM80 49.500h5v1h-5z"/>
+    <g class="a-spin" style="--i:2"><path class="m" d="M60 29l6 21H54z"/><path class="y" d="M60 71l6-21H54z"/></g>
+    <circle class="g a-rise" cx="60" cy="50" r="2"/>${ground}`,
+  // A gift: the lid comes down, then the bow.
+  gifts: `<rect class="l a-rise" x="34" y="50" width="52" height="34"/>
+    <rect class="y a-rise" x="56" y="50" width="8" height="34"/>
+    <g class="a-drop" style="--i:2"><rect class="m" x="30" y="40" width="60" height="10"/><rect class="y" x="56" y="40" width="8" height="10"/></g>
+    <path class="y a-pop" style="--i:5" d="M60 40c-4-10-18-12-18-5s12 6 18 5zM60 40c4-10 18-12 18-5s-12 6-18 5z"/>${ground}`,
+};
+const near = travel.thingsToDo.join(', ');
+---
+
+<div class:list={['wide', 'compact', `v-${variant}`]}>
+  <header class="intro-head">
+    <p class="eyebrow">The details</p>
+    <h1>The weekend</h1>
+    <dl class="specs">
+      <div><dt class="label">Date</dt><dd>{rest.join(', ')}<br /><span class="muted">{weekday}</span></dd></div>
+      <div><dt class="label">Place</dt><dd>{wedding.venue.name}<br /><span class="muted">{wedding.city}</span></dd></div>
+      <div class="rsvp"><dt class="label">RSVP</dt><dd>By {deadline}<br /><a href="/wedding/rsvp">Reply now</a></dd></div>
+    </dl>
+  </header>
+
+  {!D && (
+    <Fragment>
+      <!-- Line 1: before you come -->
+      <section class="band" aria-labelledby="before-title">
+        <header class="band-head ruled reveal">
+          <p class="label">§ 01</p>
+          <h2 id="before-title">Before you come</h2>
+        </header>
+        <ol class="stops reveal" style="--cols: 4">
+          <li class="stop" id="reply" style="--n: 0">
+            <span class="badge" aria-hidden="true"><svg viewBox="0 0 48 48" set:html={icon.reply} /></span>
+            <p class="label">By {deadlineShort}</p>
+            <h3>Reply</h3>
+            <p class="muted">It takes one minute. You need the last name on your invitation.</p>
+            <p><a href="/wedding/rsvp">RSVP</a></p>
+          </li>
+          <li class="stop" id="travel" style="--n: 1">
+            <span class="badge" aria-hidden="true"><svg viewBox="0 0 48 48" set:html={icon.travel} /></span>
+            <p class="label">{wedding.city}</p>
+            <h3>Get here</h3>
+            {travel.airports.map((a) => <p class="muted">{a.name}. {a.note}</p>)}
+            <p class="muted">{travel.gettingAround}</p>
+            {wedding.venue.mapUrl && <p><a href={wedding.venue.mapUrl} target="_blank" rel="noopener">Open the map</a></p>}
+          </li>
+          <li class="stop" id="stay" style="--n: 2">
+            <span class="badge" aria-hidden="true"><svg viewBox="0 0 48 48" set:html={icon.stay} /></span>
+            <p class="label">Room block</p>
+            <h3>Stay</h3>
+            {travel.hotels.map((h) => (
+              <p class="muted"><strong>{h.url ? <a href={h.url} target="_blank" rel="noopener">{h.name}</a> : h.name}</strong>, {h.address}. {h.note}</p>
+            ))}
+            {near && <p class="muted">Near there: {near}.</p>}
+          </li>
+          <li class="stop" id="registry" style="--n: 3">
+            <span class="badge" aria-hidden="true"><svg viewBox="0 0 48 48" set:html={icon.gifts} /></span>
+            <p class="label">Only if you want to</p>
+            <h3>Gifts</h3>
+            <p class="muted">{registry.intro}</p>
+            <p class="links">{registry.links.map((r) => (r.url ? <a href={r.url} target="_blank" rel="noopener">{r.name}</a> : <span class="muted">{r.name}</span>))}</p>
+          </li>
+        </ol>
+      </section>
+
+      <!-- Line 2: the weekend -->
+      <section class="band" id="schedule" aria-labelledby="schedule-title">
+        <header class="band-head ruled reveal">
+          <p class="label">§ 02</p>
+          <h2 id="schedule-title">The weekend</h2>
+        </header>
+        <ol class="stops reveal" style={`--cols: ${events.length}`}>
+          {events.map((e, i) => (
+            <li class:list={['stop', { last: /ceremony/i.test(e.name) }]} style={`--n: ${i}`}>
+              <span class="badge" aria-hidden="true"><svg viewBox="0 0 48 48" set:html={iconFor(e.name)} /></span>
+              <p class="label">{e.day} · {e.time}</p>
+              <h3>{e.name}</h3>
+              {e.place && <p class="muted">{e.place}</p>}
+              {e.details && <p class="muted">{e.details}</p>}
+            </li>
+          ))}
+        </ol>
+      </section>
+    </Fragment>
+  )}
+
+  {D && (
+    <div class="board">
+      <section class="tile reveal" id="reply" aria-labelledby="reply-title">
+        <svg class="pic" viewBox="0 0 120 96" aria-hidden="true" set:html={pic.reply} />
+        <p class="label">01</p>
+        <h2 id="reply-title">Reply by {deadlineShort}</h2>
+        <p class="muted">It takes one minute. You need the last name on your invitation.</p>
+        <p class="act"><a class="button" href="/wedding/rsvp">RSVP <Arrow /></a></p>
+      </section>
+
+      <section class="tile reveal" id="travel" aria-labelledby="travel-title" style="--delay: 0.06s">
+        <svg class="pic" viewBox="0 0 120 96" aria-hidden="true" set:html={pic.travel} />
+        <p class="label">02</p>
+        <h2 id="travel-title">Get here</h2>
+        <dl class="facts">
+          <div><dt class="label">Fly in</dt><dd>{travel.airports.map((a) => <span>{a.name}. <span class="muted">{a.note}</span></span>)}</dd></div>
+          <div><dt class="label">Drive</dt><dd>{travel.gettingAround}</dd></div>
+          <div><dt class="label">Arrive</dt><dd>{wedding.venue.name}, <span class="muted">{wedding.venue.address}</span>{wedding.venue.mapUrl && <Fragment><br /><a href={wedding.venue.mapUrl} target="_blank" rel="noopener">Open the map</a></Fragment>}</dd></div>
+        </dl>
+      </section>
+
+      <section class="tile reveal" id="stay" aria-labelledby="stay-title" style="--delay: 0.12s">
+        <svg class="pic" viewBox="0 0 120 96" aria-hidden="true" set:html={pic.stay} />
+        <p class="label">03</p>
+        <h2 id="stay-title">Stay</h2>
+        {travel.hotels.map((h) => (
+          <p><strong>{h.url ? <a href={h.url} target="_blank" rel="noopener">{h.name}</a> : h.name}</strong><br /><span class="muted">{h.address}</span><br />{h.note}</p>
+        ))}
+        {near && <p class="muted">Near there: {near}.</p>}
+      </section>
+
+      <section class="tile two reveal" id="schedule" aria-labelledby="schedule-title">
+        <svg class="pic" viewBox="0 0 120 96" aria-hidden="true" set:html={pic.days} />
+        <p class="label">04</p>
+        <h2 id="schedule-title">The days</h2>
+        <div class="days">
+          {days.map((d) => (
+            <div>
+              <h3 class="label day-name">{d.short}</h3>
+              <ol class="events">
+                {d.events.map((e) => (
+                  <li><span class="time">{e.time}</span><span class="what">{e.name}{(e.place || e.details) && <span class="muted more">{[e.place, e.details].filter(Boolean).join('. ')}</span>}</span></li>
+                ))}
+              </ol>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section class="tile reveal" id="registry" aria-labelledby="registry-title" style="--delay: 0.06s">
+        <svg class="pic" viewBox="0 0 120 96" aria-hidden="true" set:html={pic.gifts} />
+        <p class="label">05</p>
+        <h2 id="registry-title">Gifts</h2>
+        <p class="muted">{registry.intro}</p>
+        <p class="links">{registry.links.map((r) => (r.url ? <a href={r.url} target="_blank" rel="noopener">{r.name}</a> : <span class="muted">{r.name}</span>))}</p>
+      </section>
+
+      <section class="tile full reveal" id="faq" aria-labelledby="faq-title">
+        <div class="tile-head">
+          <svg class="pic" viewBox="0 0 120 96" aria-hidden="true" set:html={pic.know} />
+          <p class="label">06</p>
+          <h2 id="faq-title">Good to know</h2>
+        </div>
+        <dl class="qa">
+          {faq.map((item) => <div><dt>{item.q}</dt><dd>{item.a}</dd></div>)}
+        </dl>
+      </section>
+    </div>
+  )}
+
+  {!D && (
+    <section class="band" id="faq" aria-labelledby="faq-title">
+      <header class="band-head ruled reveal">
+        <p class="label">§ 03</p>
+        <h2 id="faq-title">Good to know</h2>
+      </header>
+      <dl class="qa reveal">
+        {faq.map((item) => <div><dt>{item.q}</dt><dd>{item.a}</dd></div>)}
+      </dl>
+    </section>
+  )}
+
+  <section class="band" id="milestones" aria-labelledby="story-title">
+    <header class="band-head ruled reveal">
+      <p class="label">{D ? '07' : '§ 04'}</p>
+      <h2 id="story-title">Milestones</h2>
+    </header>
+    <Milestones />
+  </section>
+
+  <aside class="end reveal">
+    <p class="end-title">See you on {rest.join(', ').replace(/, \d{4}$/, '')}.</p>
+    <a class="button" href="/wedding/rsvp">RSVP <Arrow /></a>
+  </aside>
+</div>
+
+<style>
+  :global(html) { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { :global(html) { scroll-behavior: auto; } }
+  [id] { scroll-margin-top: 80px; }
+
+  /* ---------- Top ---------- */
+  .intro-head { padding: clamp(8px, 2vw, 24px) 0 0; }
+  .intro-head .eyebrow { color: var(--accent); margin: 0 0 10px; }
+  .intro-head h1 { font-size: clamp(3.2rem, 9vw, 6.500rem); line-height: 0.95; letter-spacing: -0.02em; margin: 0 0 clamp(22px, 3vw, 36px); }
+  .specs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--text); margin: 0; max-width: 820px; }
+  .specs > div { padding: 14px 16px 0 0; }
+  .specs > div + div { border-left: 1px solid var(--line); padding-left: 16px; }
+  .specs dt { margin: 0 0 6px; }
+  .specs dd { margin: 0; line-height: 1.4; }
+  @media (max-width: 560px) {
+    .specs { grid-template-columns: 1fr 1fr; }
+    .specs > div + div.rsvp { grid-column: 1 / -1; border-left: 0; padding-left: 0; border-top: 1px solid var(--line); margin-top: 14px; }
+  }
+
+  /* ---------- A band: a rule, a small heading, then the content ---------- */
+  .band { padding-top: clamp(44px, 6vw, 72px); }
+  .band-head { display: flex; align-items: baseline; gap: 14px; padding-top: 14px; margin-bottom: 24px; }
+  .band-head h2 { margin: 0; font-size: clamp(1.6rem, 3vw, 2.100rem); }
+  .band-head .label { margin: 0; }
+
+  /* ---------- Version C: a line of stops ---------- */
+  .stops { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 0 28px; position: relative; }
+  /* The line runs through the middle of the badges. It draws from left to right. */
+  .stops::before {
+    content: ''; position: absolute; left: 28px; right: 28px; top: 28px; height: 1px; background: var(--text);
+    transform-origin: left center; transform: scaleX(0); transition: transform 1.400s var(--glide) 0.1s;
+  }
+  .stops.in::before, :global(html:not(.js)) .stops::before { transform: none; }
+  .badge {
+    display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%;
+    background: var(--bg); border: 1px solid var(--line); margin-bottom: 14px; position: relative;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 0.5s var(--ease), transform 0.6s var(--glide), border-color 0.3s var(--ease);
+    transition-delay: calc(0.25s + var(--n) * 0.12s);
+  }
+  .stops.in .badge, :global(html:not(.js)) .badge { opacity: 1; transform: none; }
+  .stop:hover .badge, .stop.last .badge { border-color: var(--accent); }
+  .badge svg { width: 36px; height: 36px; fill: none; stroke: var(--accent); stroke-width: 1.400; stroke-linecap: round; stroke-linejoin: round; }
+  .badge svg :global(.fill) { fill: color-mix(in srgb, var(--accent) 18%, transparent); }
+  .stop .label { margin: 0 0 4px; font-size: 0.72rem; }
+  .stop h3 { margin: 0 0 6px; font-family: var(--display); font-weight: 400; font-size: 1.450rem; line-height: 1.15; letter-spacing: -0.01em; }
+  .stop p { margin: 0 0 6px; font-size: 0.95rem; line-height: 1.5; max-width: 34ch; }
+  .stop strong { color: var(--text); font-weight: 500; }
+  .links { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+  /* On a phone the stops go in a list: the icon on the left, the text on the right. */
+  @media (max-width: 860px) {
+    .stops { grid-template-columns: 1fr; border-top: 1px solid var(--line); }
+    .stops::before { display: none; }
+    .stop { display: grid; grid-template-columns: 48px 1fr; column-gap: 16px; padding: 16px 0 12px; border-bottom: 1px solid var(--line); }
+    .stop > * { grid-column: 2; }
+    .stop > .badge { grid-column: 1; grid-row: 1 / span 8; width: 48px; height: 48px; margin: 2px 0 0; }
+    .badge svg { width: 30px; height: 30px; }
+    .band-head { margin-bottom: 16px; }
+  }
+
+  /* ---------- Questions: short, in columns ---------- */
+  .qa { margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0 28px; }
+  .qa > div { border-top: 1px solid var(--line); padding: 14px 0 16px; }
+  .qa dt { font-family: var(--display); font-size: 1.250rem; line-height: 1.2; margin: 0 0 4px; }
+  .qa dd { margin: 0; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
+
+  /* ---------- Version D: a board of tiles ---------- */
+  .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 40px; grid-auto-flow: dense; padding-top: clamp(36px, 5vw, 56px); }
+  .tile { border-top: 1px solid var(--text); padding: 20px 0 clamp(36px, 4vw, 52px); }
+  .tile.two { grid-column: span 2; }
+  .tile.full { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
+  .tile.full .qa { grid-column: 2 / -1; align-content: start; }
+  @media (max-width: 900px) {
+    .board { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; }
+    .tile.full { display: block; }
+    .tile.full .qa { margin-top: 16px; }
+  }
+  @media (max-width: 600px) {
+    .board { grid-template-columns: 1fr; }
+    .tile.two { grid-column: auto; }
+    .tile { padding-bottom: 28px; }
+  }
+  .tile .label { margin: 0 0 2px; color: var(--accent); }
+  .tile h2 { margin: 0 0 10px; font-size: clamp(1.7rem, 2.6vw, 2.100rem); line-height: 1.05; }
+  .tile p { margin: 0 0 8px; font-size: 0.97rem; line-height: 1.5; max-width: 40ch; }
+  .tile strong { font-weight: 500; }
+  .tile .act { margin-top: 16px; }
+  .facts { margin: 0; }
+  .facts > div { display: grid; grid-template-columns: 62px 1fr; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 0.95rem; line-height: 1.45; }
+  .facts > div:first-child { border-top: 0; padding-top: 0; }
+  .facts dt { margin: 0; padding-top: 3px; }
+  .facts dd { margin: 0; }
+  .days { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 40px; }
+  .day-name { margin: 0 0 4px; }
+  .events { list-style: none; margin: 0; padding: 0; }
+  .events li { display: grid; grid-template-columns: 62px 1fr; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); align-items: baseline; }
+  .time { font-size: 0.85rem; letter-spacing: 0.04em; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .what { font-family: var(--display); font-size: 1.250rem; line-height: 1.2; }
+  .more { display: block; font-family: var(--sans); font-size: 0.9rem; line-height: 1.4; margin-top: 2px; }
+
+  /* Flat pictures. Each part comes in a short time after the one before it. */
+  .pic { display: block; width: 144px; height: auto; margin: 0 0 14px -4px; overflow: visible; }
+  .pic :global(.m) { fill: var(--accent); }
+  .pic :global(.l) { fill: color-mix(in srgb, var(--accent) 32%, var(--bg)); }
+  .pic :global(.g) { fill: var(--text); }
+  .pic :global(.y) { fill: var(--gold); }
+  .pic :global(.p) { fill: var(--bg); }
+  .pic :global(.ground) { fill: none; stroke: var(--text); stroke-width: 1; }
+  .pic :global([class*='a-']) {
+    transform-box: fill-box; transform-origin: center;
+    transition: opacity 0.45s var(--ease), transform 0.7s var(--glide);
+    transition-delay: calc(var(--delay, 0s) + 0.15s + var(--i, 0) * 0.07s);
+  }
+  :global(.js) .tile:not(.in) .pic :global([class*='a-']) { opacity: 0; }
+  :global(.js) .tile:not(.in) .pic :global(.a-rise) { transform: translateY(10px); }
+  :global(.js) .tile:not(.in) .pic :global(.a-drop) { transform: translateY(-12px); }
+  :global(.js) .tile:not(.in) .pic :global(.a-fly) { transform: translateX(-26px); }
+  :global(.js) .tile:not(.in) .pic :global(.a-pop) { transform: scale(0.3); }
+  .pic :global(.a-fold) { transform-origin: center top; }
+  :global(.js) .tile:not(.in) .pic :global(.a-fold) { transform: scaleY(0); }
+  .pic :global(.a-unfurl) { transform-origin: left center; }
+  :global(.js) .tile:not(.in) .pic :global(.a-unfurl) { transform: scaleX(0); }
+  .pic :global(.a-pop), .pic :global(.a-spin) { transition-timing-function: var(--ease), cubic-bezier(0.34, 1.5, 0.64, 1); }
+  .pic :global(.a-spin) { transform: rotate(24deg); transition-duration: 0.45s, 1.100s; }
+  :global(.js) .tile:not(.in) .pic :global(.a-spin) { transform: rotate(-110deg); }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.js) .tile .pic :global([class*='a-']) { opacity: 1 !important; transition: none; }
+    :global(.js) .tile .pic :global([class*='a-']:not(.a-spin)) { transform: none !important; }
+    .badge, .stops::before { transition: none; opacity: 1; transform: none; }
+  }
+
+  /* On a phone the picture goes to the right of the heading. */
+  @media (max-width: 600px) {
+    .tile, .tile-head { position: relative; }
+    .tile > .pic, .tile-head > .pic { position: absolute; right: 0; top: 14px; width: 92px; margin: 0; }
+    .tile-head > .pic { top: -6px; }
+    .tile > .label, .tile-head > .label { padding-top: 22px; }
+    .tile h2 { max-width: calc(100% - 104px); min-height: 1.6em; margin-bottom: 18px; }
+  }
+
+  /* The end */
+  .end {
+    margin: clamp(48px, 7vw, 88px) 0 clamp(16px, 3vw, 32px);
+    border-top: 1px solid var(--text); padding-top: 24px;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px;
+  }
+  .end-title { font-family: var(--display); font-size: clamp(1.8rem, 4vw, 2.800rem); line-height: 1; margin: 0; }
+</style>

@@ -1,0 +1,16 @@
+---
+// Test page: version D of the new Details page (round 2: short and clean).
+// Not in the menu.
+import Layout from '../../../layouts/Layout.astro';
+import Compact from '../../../components/details/Compact.astro';
+---
+
+<Layout title="Details lab D" noindex>
+  <p class="wide labnote label">Test page · Version D, a board with flat pictures · <a class="toc" href="/wedding/lab-details/c">See version C</a></p>
+  <Compact variant="d" />
+</Layout>
+
+<style>
+  .labnote { margin-top: -20px; margin-bottom: 12px; }
+  .labnote a { color: var(--accent); }
+</style>
