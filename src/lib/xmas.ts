@@ -39,6 +39,7 @@ export interface Comment {
 const PEOPLE = 'xmas:people';
 const GIFTS = 'xmas:gifts';
 const COMMENTS = 'xmas:comments';
+const REMOVED = 'xmas:removed'; // copies of removed people and their records, for a restore
 
 export const newId = () => randomBytes(6).toString('base64url');
 const now = () => new Date().toISOString();
@@ -78,16 +79,27 @@ export async function renamePerson(id: string, name: string) {
   const p = await getPerson(id);
   if (p) await setItem(PEOPLE, id, { ...p, name });
 }
-/** Removes a person and all that they made: their list, their surprises, their notes and their marks. */
+/**
+ * Removes a person and all that they made: their list, their surprises, their notes and their marks.
+ * Before it deletes, it saves a copy of each record that it deletes or changes in the hash
+ * `xmas:removed`, so a removal by mistake can be restored.
+ */
 export async function removePerson(id: string) {
-  for (const g of await getAll<Gift>(GIFTS)) {
-    if (g.owner === id || g.addedBy === id) {
-      await deleteItem(GIFTS, g.id);
-      continue;
-    }
-    const before = g.team ?? [];
-    const team = before.filter((t) => t !== id);
-    if (g.gotBy !== id && team.length === before.length) continue;
+  const person = await getPerson(id);
+  const allGifts = await getAll<Gift>(GIFTS);
+  const allComments = await getAll<Comment>(COMMENTS);
+
+  const goneGifts = allGifts.filter((g) => g.owner === id || g.addedBy === id);
+  const gone = new Set(goneGifts.map((g) => g.id));
+  const changedGifts = allGifts.filter((g) => !gone.has(g.id) && (g.gotBy === id || (g.team ?? []).includes(id)));
+  const goneComments = allComments.filter((c) => c.owner === id || c.by === id || (c.gift && gone.has(c.gift)));
+
+  const at = now();
+  await setItem(REMOVED, `${id}:${at}`, { at, person, gifts: goneGifts, changedGifts, comments: goneComments });
+
+  for (const g of goneGifts) await deleteItem(GIFTS, g.id);
+  for (const g of changedGifts) {
+    const team = (g.team ?? []).filter((t) => t !== id);
     const next: Gift = { ...g, team };
     if (!team.length) delete next.team;
     if (g.gotBy === id) {
@@ -97,10 +109,7 @@ export async function removePerson(id: string) {
     }
     await setItem(GIFTS, g.id, next);
   }
-  const gifts = new Set((await getAll<Gift>(GIFTS)).map((g) => g.id));
-  for (const c of await getAll<Comment>(COMMENTS)) {
-    if (c.owner === id || c.by === id || (c.gift && !gifts.has(c.gift))) await deleteItem(COMMENTS, c.id);
-  }
+  for (const c of goneComments) await deleteItem(COMMENTS, c.id);
   await deleteItem(PEOPLE, id);
 }
 
